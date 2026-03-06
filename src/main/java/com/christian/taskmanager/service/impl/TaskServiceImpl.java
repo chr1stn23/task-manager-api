@@ -43,7 +43,22 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponseDTO getTaskById(Long id) {
         return taskRepository.findById(id)
                 .map(TaskMapper::toDTO)
-                .orElseThrow();
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+    }
+
+    @Override
+    public TaskResponseDTO updateTask(Long id, TaskRequestDTO request) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        task.setTitle(request.title());
+        task.setDescription(request.description());
+        task.setStatus(request.status());
+        task.setPriority(request.priority());
+        task.setDueDate(request.dueDate());
+
+        Task updated = taskRepository.save(task);
+        return TaskMapper.toDTO(updated);
     }
 
     @Override
