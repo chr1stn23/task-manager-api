@@ -5,10 +5,13 @@ import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.Task;
 import com.christian.taskmanager.entity.TaskStatus;
+import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.mapper.TaskMapper;
 import com.christian.taskmanager.repository.TaskRepository;
+import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.repository.specification.TaskSpecification;
 import com.christian.taskmanager.service.TaskService;
+import com.christian.taskmanager.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,18 +23,32 @@ import org.springframework.stereotype.Service;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
 
     @Override
     public TaskResponseDTO createTask(TaskRequestDTO request) {
+        String email = SecurityUtils.getCurrentUserEmail();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         Task task = TaskMapper.toEntity(request);
+        task.setUser(user);
+
         Task saved = taskRepository.save(task);
         return TaskMapper.toDTO(saved);
     }
 
     @Override
     public Page<TaskResponseDTO> getTasks(TaskStatus status, Priority priority, Pageable pageable) {
+        String email = SecurityUtils.getCurrentUserEmail();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         Specification<Task> spec = Specification
-                .where(TaskSpecification.hasStatus(status))
+                .where(TaskSpecification.belongsToUser(user))
+                .and(TaskSpecification.hasStatus(status))
                 .and(TaskSpecification.hasPriority(priority));
 
         return taskRepository
@@ -41,15 +58,28 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskResponseDTO getTaskById(Long id) {
-        return taskRepository.findById(id)
-                .map(TaskMapper::toDTO)
+        String email = SecurityUtils.getCurrentUserEmail();
+
+        Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        if (!task.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return TaskMapper.toDTO(task);
     }
 
     @Override
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO request) {
+        String email = SecurityUtils.getCurrentUserEmail();
+
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        if (!task.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied");
+        }
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -63,6 +93,15 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void deleteTask(Long id) {
+        String email = SecurityUtils.getCurrentUserEmail();
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        if (!task.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied");
+        }
+
         taskRepository.deleteById(id);
     }
 }
