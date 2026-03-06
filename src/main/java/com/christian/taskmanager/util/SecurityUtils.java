@@ -1,5 +1,6 @@
 package com.christian.taskmanager.util;
 
+import com.christian.taskmanager.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -13,5 +14,15 @@ public class SecurityUtils {
         }
 
         return authentication.getName();
+    }
+
+    public static User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+
+        return (User) authentication.getPrincipal();
     }
 }

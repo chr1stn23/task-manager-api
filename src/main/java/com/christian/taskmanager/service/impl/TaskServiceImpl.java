@@ -8,7 +8,6 @@ import com.christian.taskmanager.entity.TaskStatus;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.mapper.TaskMapper;
 import com.christian.taskmanager.repository.TaskRepository;
-import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.repository.specification.TaskSpecification;
 import com.christian.taskmanager.service.TaskService;
 import com.christian.taskmanager.util.SecurityUtils;
@@ -23,14 +22,10 @@ import org.springframework.stereotype.Service;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
 
     @Override
     public TaskResponseDTO createTask(TaskRequestDTO request) {
-        String email = SecurityUtils.getCurrentUserEmail();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = SecurityUtils.getCurrentUser();
 
         Task task = TaskMapper.toEntity(request);
         task.setUser(user);
@@ -41,10 +36,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Page<TaskResponseDTO> getTasks(TaskStatus status, Priority priority, Pageable pageable) {
-        String email = SecurityUtils.getCurrentUserEmail();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = SecurityUtils.getCurrentUser();
 
         Specification<Task> spec = Specification
                 .where(TaskSpecification.belongsToUser(user))
