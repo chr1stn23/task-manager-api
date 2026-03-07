@@ -1,5 +1,7 @@
 package com.christian.taskmanager.controller;
 
+import com.christian.taskmanager.common.ApiResponse;
+import com.christian.taskmanager.common.ResponseUtil;
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.entity.Priority;
@@ -21,33 +23,32 @@ public class TaskController {
     private final TaskService taskService;
 
     @PostMapping
-    public TaskResponseDTO createTask(
-            @RequestBody @Valid TaskRequestDTO request
-    ) {
-        return taskService.createTask(request);
+    public ApiResponse<TaskResponseDTO> createTask(@RequestBody @Valid TaskRequestDTO request) {
+        return ResponseUtil.success(taskService.createTask(request));
     }
 
     @GetMapping
-    public Page<TaskResponseDTO> getTasks(
+    public ApiResponse<Page<TaskResponseDTO>> getTasks(
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false) Priority priority,
             @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return taskService.getTasks(status, priority, pageable);
+        return ResponseUtil.success(taskService.getTasks(status, priority, pageable));
     }
 
     @GetMapping("/{id}")
-    public TaskResponseDTO getTaskById(@PathVariable Long id) {
-        return taskService.getTaskById(id);
+    public ApiResponse<TaskResponseDTO> getTaskById(@PathVariable Long id) {
+        return ResponseUtil.success(taskService.getTaskById(id));
     }
 
     @PutMapping("/{id}")
-    public TaskResponseDTO updateTask(@PathVariable Long id, @RequestBody @Valid TaskRequestDTO request) {
-        return taskService.updateTask(id, request);
+    public ApiResponse<TaskResponseDTO> updateTask(@PathVariable Long id, @RequestBody @Valid TaskRequestDTO request) {
+        return ResponseUtil.success(taskService.updateTask(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteTask(@PathVariable Long id) {
+    public ApiResponse<String> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
+        return ResponseUtil.success("Task deleted successfully");
     }
 }
