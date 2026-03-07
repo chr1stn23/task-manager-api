@@ -1,8 +1,11 @@
-package com.christian.taskmanager.common;
+package com.christian.taskmanager.util;
+
+import com.christian.taskmanager.dto.response.ApiResponseWrapper;
+import com.christian.taskmanager.dto.response.ErrorResponse;
 
 import java.time.LocalDateTime;
 
-public class ResponseUtil {
+public class ResponseUtils {
 
     public static <T> ApiResponseWrapper<T> success(T data) {
         return ApiResponseWrapper.<T>builder()

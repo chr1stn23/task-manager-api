@@ -1,4 +1,4 @@
-package com.christian.taskmanager.common;
+package com.christian.taskmanager.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
