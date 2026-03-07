@@ -11,4 +11,5 @@ public class ApiResponse<T> {
     private boolean success;
     private LocalDateTime timestamp;
     private T data;
+    private ErrorResponse error;
 }

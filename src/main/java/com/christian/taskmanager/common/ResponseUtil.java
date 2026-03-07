@@ -11,4 +11,17 @@ public class ResponseUtil {
                 .data(data)
                 .build();
     }
+
+    public static ApiResponse<Void> error(String message, String code) {
+        return ApiResponse.<Void>builder()
+                .success(false)
+                .timestamp(LocalDateTime.now())
+                .error(
+                        ErrorResponse.builder()
+                                .message(message)
+                                .code(code)
+                                .build()
+                )
+                .build();
+    }
 }

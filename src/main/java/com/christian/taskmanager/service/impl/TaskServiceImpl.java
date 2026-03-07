@@ -6,6 +6,8 @@ import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.Task;
 import com.christian.taskmanager.entity.TaskStatus;
 import com.christian.taskmanager.entity.User;
+import com.christian.taskmanager.exception.NotFoundException;
+import com.christian.taskmanager.exception.UnauthorizedException;
 import com.christian.taskmanager.mapper.TaskMapper;
 import com.christian.taskmanager.repository.TaskRepository;
 import com.christian.taskmanager.repository.specification.TaskSpecification;
@@ -53,7 +55,7 @@ public class TaskServiceImpl implements TaskService {
         String email = SecurityUtils.getCurrentUserEmail();
 
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new NotFoundException("Task not found"));
 
         if (!task.getUser().getEmail().equals(email)) {
             throw new RuntimeException("Access denied");
@@ -67,10 +69,10 @@ public class TaskServiceImpl implements TaskService {
         String email = SecurityUtils.getCurrentUserEmail();
 
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new NotFoundException("Task not found"));
 
         if (!task.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("Access denied");
+            throw new UnauthorizedException("Access denied");
         }
 
         task.setTitle(request.title());
@@ -88,10 +90,10 @@ public class TaskServiceImpl implements TaskService {
         String email = SecurityUtils.getCurrentUserEmail();
 
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new NotFoundException("Task not found"));
 
         if (!task.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("Access denied");
+            throw new UnauthorizedException("Access denied");
         }
 
         taskRepository.deleteById(id);
