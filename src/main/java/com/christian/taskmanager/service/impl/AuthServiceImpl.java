@@ -4,6 +4,8 @@ import com.christian.taskmanager.dto.request.AuthRequestDTO;
 import com.christian.taskmanager.dto.request.RegisterRequestDTO;
 import com.christian.taskmanager.dto.response.AuthResponseDTO;
 import com.christian.taskmanager.entity.User;
+import com.christian.taskmanager.exception.EmailAlreadyExistsException;
+import com.christian.taskmanager.exception.InvalidCredentialsException;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.JwtService;
 import com.christian.taskmanager.service.AuthService;
@@ -22,7 +24,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponseDTO register(RegisterRequestDTO request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("Email already registered");
+            throw new EmailAlreadyExistsException("Email already registered");
         }
 
         User user = User.builder()
@@ -41,10 +43,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponseDTO login(AuthRequestDTO request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         String token = jwtService.generateToken(user.getEmail());

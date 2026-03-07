@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-public class ApiResponse<T> {
+public class ApiResponseWrapper<T> {
     private boolean success;
     private LocalDateTime timestamp;
     private T data;

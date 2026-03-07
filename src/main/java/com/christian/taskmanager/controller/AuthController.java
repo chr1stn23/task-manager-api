@@ -4,6 +4,10 @@ import com.christian.taskmanager.dto.request.AuthRequestDTO;
 import com.christian.taskmanager.dto.request.RegisterRequestDTO;
 import com.christian.taskmanager.dto.response.AuthResponseDTO;
 import com.christian.taskmanager.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,15 +18,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Authentication endpoints")
 public class AuthController {
 
     private final AuthService authService;
 
+    @Operation(summary = "Register a new user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Registration successful"),
+            @ApiResponse(responseCode = "409", description = "Email already registered")
+    })
     @PostMapping("/register")
     public AuthResponseDTO register(@RequestBody @Valid RegisterRequestDTO request) {
         return authService.register(request);
     }
 
+    @Operation(summary = "Authenticate user and return JWT token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful"),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    })
     @PostMapping("/login")
     public AuthResponseDTO login(@RequestBody AuthRequestDTO request) {
         return authService.login(request);
