@@ -3,7 +3,6 @@ package com.christian.taskmanager.repository.specification;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.Task;
 import com.christian.taskmanager.entity.TaskStatus;
-import com.christian.taskmanager.entity.User;
 import org.springframework.data.jpa.domain.Specification;
 
 public class TaskSpecification {
@@ -18,8 +17,13 @@ public class TaskSpecification {
                 priority == null ? null : cb.equal(root.get("priority"), priority);
     }
 
-    public static Specification<Task> belongsToUser(User user) {
+    public static Specification<Task> belongsToUserId(Long userId) {
         return (root, query, cb) ->
-                cb.equal(root.get("user"), user);
+                userId == null ? null : cb.equal(root.get("user").get("id"), userId);
+    }
+
+    public static Specification<Task> isDeleted(boolean deleted) {
+        return (root, query, cb) ->
+                cb.equal(root.get("deleted"), deleted);
     }
 }

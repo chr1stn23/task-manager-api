@@ -13,9 +13,13 @@ public interface TaskService {
 
     Page<TaskResponseDTO> getTasks(TaskStatus status, Priority priority, Pageable pageable);
 
+    Page<TaskResponseDTO> getDeletedTasks(TaskStatus status, Priority priority, Long userId, Pageable pageable);
+
     TaskResponseDTO getTaskById(Long id);
 
     TaskResponseDTO updateTask(Long id, TaskRequestDTO request);
 
     void deleteTask(Long id);
+
+    void restoreTask(Long id);
 }

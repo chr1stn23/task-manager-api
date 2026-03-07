@@ -2,7 +2,6 @@ package com.christian.taskmanager.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDate;
 
 @Entity
@@ -29,4 +28,7 @@ public class Task extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Column(nullable = false)
+    private boolean deleted = false;
 }

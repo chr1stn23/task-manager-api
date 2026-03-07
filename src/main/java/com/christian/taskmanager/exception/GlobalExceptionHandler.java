@@ -1,7 +1,7 @@
 package com.christian.taskmanager.exception;
 
-import com.christian.taskmanager.common.ApiResponseWrapper;
-import com.christian.taskmanager.common.ResponseUtil;
+import com.christian.taskmanager.dto.response.ApiResponseWrapper;
+import com.christian.taskmanager.util.ResponseUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -15,30 +15,28 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponseWrapper<Void>> handleNotFound(NotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(ResponseUtil.error(ex.getMessage(), "NOT_FOUND"));
+                .body(ResponseUtils.error(ex.getMessage(), "NOT_FOUND"));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleUnauthorized(UnauthorizedException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ResponseUtil.error(ex.getMessage(), "ACCESS_DENIED"));
+                .body(ResponseUtils.error(ex.getMessage(), "ACCESS_DENIED"));
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleEmailExists(EmailAlreadyExistsException ex) {
-
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ResponseUtil.error(ex.getMessage(), "EMAIL_ALREADY_EXISTS"));
+                .body(ResponseUtils.error(ex.getMessage(), "EMAIL_ALREADY_EXISTS"));
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleInvalidCredentials(InvalidCredentialsException ex) {
-
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ResponseUtil.error(ex.getMessage(), "INVALID_CREDENTIALS"));
+                .body(ResponseUtils.error(ex.getMessage(), "INVALID_CREDENTIALS"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -52,13 +50,20 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .badRequest()
-                .body(ResponseUtil.error(message, "VALIDATION_ERROR"));
+                .body(ResponseUtils.error(message, "VALIDATION_ERROR"));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleIllegalState(BadRequestException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ResponseUtils.error(ex.getMessage(), "BAD_REQUEST"));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleGeneric(Exception ex) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ResponseUtil.error(ex.getMessage(), "INTERNAL_ERROR"));
+                .body(ResponseUtils.error(ex.getMessage(), "INTERNAL_ERROR"));
     }
 }

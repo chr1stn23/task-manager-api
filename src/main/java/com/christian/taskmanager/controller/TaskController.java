@@ -1,12 +1,12 @@
 package com.christian.taskmanager.controller;
 
-import com.christian.taskmanager.common.ApiResponseWrapper;
-import com.christian.taskmanager.common.ResponseUtil;
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
+import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.TaskStatus;
 import com.christian.taskmanager.service.TaskService;
+import com.christian.taskmanager.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,7 +36,7 @@ public class TaskController {
     })
     @PostMapping
     public ApiResponseWrapper<TaskResponseDTO> createTask(@RequestBody @Valid TaskRequestDTO request) {
-        return ResponseUtil.success(taskService.createTask(request));
+        return ResponseUtils.success(taskService.createTask(request));
     }
 
     @Operation(summary = "Get tasks with optional filters")
@@ -52,7 +52,7 @@ public class TaskController {
             @RequestParam(required = false) Priority priority,
             @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseUtil.success(taskService.getTasks(status, priority, pageable));
+        return ResponseUtils.success(taskService.getTasks(status, priority, pageable));
     }
 
     @Operation(summary = "Get task by ID")
@@ -64,7 +64,7 @@ public class TaskController {
     })
     @GetMapping("/{id}")
     public ApiResponseWrapper<TaskResponseDTO> getTaskById(@PathVariable Long id) {
-        return ResponseUtil.success(taskService.getTaskById(id));
+        return ResponseUtils.success(taskService.getTaskById(id));
     }
 
     @Operation(summary = "Update an existing task")
@@ -77,7 +77,7 @@ public class TaskController {
     @PutMapping("/{id}")
     public ApiResponseWrapper<TaskResponseDTO> updateTask(@PathVariable Long id,
             @RequestBody @Valid TaskRequestDTO request) {
-        return ResponseUtil.success(taskService.updateTask(id, request));
+        return ResponseUtils.success(taskService.updateTask(id, request));
     }
 
     @Operation(summary = "Delete a task")
@@ -90,6 +90,38 @@ public class TaskController {
     @DeleteMapping("/{id}")
     public ApiResponseWrapper<String> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
-        return ResponseUtil.success("Task deleted successfully");
+        return ResponseUtils.success("Task deleted successfully");
+    }
+
+    @Operation(summary = "Restore a task")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task restored successfully"),
+            @ApiResponse(responseCode = "404", description = "Task not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
+    @PatchMapping("/{id}/restore")
+    public ApiResponseWrapper<String> restoreTask(@PathVariable Long id) {
+        taskService.restoreTask(id);
+        return ResponseUtils.success("Task restored successfully");
+    }
+
+    @Operation(summary = "Get all deleted tasks")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tasks retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/deleted")
+    public ApiResponseWrapper<Page<TaskResponseDTO>> getDeletedTasks(
+            @Parameter(description = "Filter by task status")
+            @RequestParam(required = false) TaskStatus status,
+            @Parameter(description = "Filter by task priority")
+            @RequestParam(required = false) Priority priority,
+            @Parameter(description = "Filter by user ID")
+            @RequestParam(required = false) Long userId,
+            @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<TaskResponseDTO> tasks = taskService.getDeletedTasks(status, priority, userId, pageable);
+        return ResponseUtils.success(tasks);
     }
 }

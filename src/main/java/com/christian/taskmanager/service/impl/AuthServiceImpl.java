@@ -3,6 +3,7 @@ package com.christian.taskmanager.service.impl;
 import com.christian.taskmanager.dto.request.AuthRequestDTO;
 import com.christian.taskmanager.dto.request.RegisterRequestDTO;
 import com.christian.taskmanager.dto.response.AuthResponseDTO;
+import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.EmailAlreadyExistsException;
 import com.christian.taskmanager.exception.InvalidCredentialsException;
@@ -12,6 +13,8 @@ import com.christian.taskmanager.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
                 .name(request.name())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
+                .roles(List.of(Role.ROLE_USER))
                 .build();
 
         userRepository.save(user);

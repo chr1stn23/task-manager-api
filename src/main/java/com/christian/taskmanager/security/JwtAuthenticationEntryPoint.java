@@ -1,7 +1,7 @@
 package com.christian.taskmanager.security;
 
-import com.christian.taskmanager.common.ApiResponseWrapper;
-import com.christian.taskmanager.common.ResponseUtil;
+import com.christian.taskmanager.dto.response.ApiResponseWrapper;
+import com.christian.taskmanager.util.ResponseUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.AuthenticationException;
@@ -22,7 +22,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
 
-        ApiResponseWrapper<Void> errorResponse = ResponseUtil.error("Authentication required", "UNAUTHORIZED");
+        ApiResponseWrapper<Void> errorResponse = ResponseUtils.error("Authentication required", "UNAUTHORIZED");
 
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }

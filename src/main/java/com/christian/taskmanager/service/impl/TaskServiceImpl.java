@@ -41,7 +41,25 @@ public class TaskServiceImpl implements TaskService {
         User user = SecurityUtils.getCurrentUser();
 
         Specification<Task> spec = Specification
-                .where(TaskSpecification.belongsToUser(user))
+                .where(TaskSpecification.isDeleted(false))
+                .and(TaskSpecification.belongsToUserId(user.getId()))
+                .and(TaskSpecification.hasStatus(status))
+                .and(TaskSpecification.hasPriority(priority));
+
+        return taskRepository
+                .findAll(spec, pageable)
+                .map(TaskMapper::toDTO);
+    }
+
+    @Override
+    public Page<TaskResponseDTO> getDeletedTasks(TaskStatus status, Priority priority, Long userId, Pageable pageable) {
+        if (!SecurityUtils.isAdmin()) {
+            throw new UnauthorizedException("Only admins can view deleted tasks");
+        }
+
+        Specification<Task> spec = Specification
+                .where(TaskSpecification.isDeleted(true))
+                .and(TaskSpecification.belongsToUserId(userId))
                 .and(TaskSpecification.hasStatus(status))
                 .and(TaskSpecification.hasPriority(priority));
 
@@ -52,28 +70,20 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskResponseDTO getTaskById(Long id) {
-        String email = SecurityUtils.getCurrentUserEmail();
-
-        Task task = taskRepository.findById(id)
+        Task task = taskRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        if (!task.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("Access denied");
-        }
+        SecurityUtils.checkTaskOwnershipOrAdmin(task.getUser().getId());
 
         return TaskMapper.toDTO(task);
     }
 
     @Override
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO request) {
-        String email = SecurityUtils.getCurrentUserEmail();
-
-        Task task = taskRepository.findById(id)
+        Task task = taskRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        if (!task.getUser().getEmail().equals(email)) {
-            throw new UnauthorizedException("Access denied");
-        }
+        SecurityUtils.checkTaskOwnershipOrAdmin(task.getUser().getId());
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -87,15 +97,27 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void deleteTask(Long id) {
-        String email = SecurityUtils.getCurrentUserEmail();
-
-        Task task = taskRepository.findById(id)
+        Task task = taskRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        if (!task.getUser().getEmail().equals(email)) {
-            throw new UnauthorizedException("Access denied");
+        SecurityUtils.checkTaskOwnershipOrAdmin(task.getUser().getId());
+
+        task.setDeleted(true);
+
+        taskRepository.save(task);
+    }
+
+    @Override
+    public void restoreTask(Long id) {
+        Task task = taskRepository.findByIdAndDeletedTrue(id)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+
+        if (!SecurityUtils.isAdmin()) {
+            throw new UnauthorizedException("Only admins can restore tasks");
         }
 
-        taskRepository.deleteById(id);
+        task.setDeleted(false);
+
+        taskRepository.save(task);
     }
 }
