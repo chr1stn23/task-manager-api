@@ -11,23 +11,26 @@ import com.christian.taskmanager.exception.UnauthorizedException;
 import com.christian.taskmanager.mapper.TaskMapper;
 import com.christian.taskmanager.repository.TaskRepository;
 import com.christian.taskmanager.repository.specification.TaskSpecification;
+import com.christian.taskmanager.service.CurrentUserService;
 import com.christian.taskmanager.service.TaskService;
-import com.christian.taskmanager.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
+    private final CurrentUserService currentUserService;
 
+    @Transactional
     @Override
     public TaskResponseDTO createTask(TaskRequestDTO request) {
-        User user = SecurityUtils.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
 
         Task task = TaskMapper.toEntity(request);
         task.setUser(user);
@@ -36,13 +39,14 @@ public class TaskServiceImpl implements TaskService {
         return TaskMapper.toDTO(saved);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Page<TaskResponseDTO> getTasks(TaskStatus status, Priority priority, Pageable pageable) {
-        User user = SecurityUtils.getCurrentUser();
+        Long userId = currentUserService.getCurrentUserId();
 
         Specification<Task> spec = Specification
                 .where(TaskSpecification.isDeleted(false))
-                .and(TaskSpecification.belongsToUserId(user.getId()))
+                .and(TaskSpecification.belongsToUserId(userId))
                 .and(TaskSpecification.hasStatus(status))
                 .and(TaskSpecification.hasPriority(priority));
 
@@ -51,9 +55,10 @@ public class TaskServiceImpl implements TaskService {
                 .map(TaskMapper::toDTO);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Page<TaskResponseDTO> getDeletedTasks(TaskStatus status, Priority priority, Long userId, Pageable pageable) {
-        if (!SecurityUtils.isAdmin()) {
+        if (!currentUserService.isAdmin()) {
             throw new UnauthorizedException("Only admins can view deleted tasks");
         }
 
@@ -68,22 +73,24 @@ public class TaskServiceImpl implements TaskService {
                 .map(TaskMapper::toDTO);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public TaskResponseDTO getTaskById(Long id) {
         Task task = taskRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        SecurityUtils.checkTaskOwnershipOrAdmin(task.getUser().getId());
+        currentUserService.checkOwnershipOrAdmin(task.getUser().getId());
 
         return TaskMapper.toDTO(task);
     }
 
+    @Transactional
     @Override
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO request) {
         Task task = taskRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        SecurityUtils.checkTaskOwnershipOrAdmin(task.getUser().getId());
+        currentUserService.checkOwnershipOrAdmin(task.getUser().getId());
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -95,24 +102,26 @@ public class TaskServiceImpl implements TaskService {
         return TaskMapper.toDTO(updated);
     }
 
+    @Transactional
     @Override
     public void deleteTask(Long id) {
         Task task = taskRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        SecurityUtils.checkTaskOwnershipOrAdmin(task.getUser().getId());
+        currentUserService.checkOwnershipOrAdmin(task.getUser().getId());
 
         task.setDeleted(true);
 
         taskRepository.save(task);
     }
 
+    @Transactional
     @Override
     public void restoreTask(Long id) {
         Task task = taskRepository.findByIdAndDeletedTrue(id)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        if (!SecurityUtils.isAdmin()) {
+        if (!currentUserService.isAdmin()) {
             throw new UnauthorizedException("Only admins can restore tasks");
         }
 
