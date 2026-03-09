@@ -1,8 +1,8 @@
 package com.christian.taskmanager.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -10,7 +10,9 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@SuperBuilder
 @MappedSuperclass
+@NoArgsConstructor
 public abstract class BaseEntity {
 
     @Id

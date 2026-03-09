@@ -118,12 +118,12 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     @Override
     public void restoreTask(Long id) {
-        Task task = taskRepository.findByIdAndDeletedTrue(id)
-                .orElseThrow(() -> new NotFoundException("Task not found"));
-
         if (!currentUserService.isAdmin()) {
             throw new UnauthorizedException("Only admins can restore tasks");
         }
+
+        Task task = taskRepository.findByIdAndDeletedTrue(id)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
 
         task.setDeleted(false);
 
