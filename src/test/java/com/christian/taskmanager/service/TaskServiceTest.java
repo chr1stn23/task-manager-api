@@ -42,8 +42,8 @@ public class TaskServiceTest {
     @InjectMocks
     private TaskServiceImpl taskService;
 
-    //Helpers
-    private User createUser(Long id, String name, String email, List<Role> roles) {
+    // Helpers
+    private static User createUser(Long id, String name, String email, List<Role> roles) {
         return User.builder()
                 .id(id)
                 .name(name)
@@ -52,7 +52,7 @@ public class TaskServiceTest {
                 .build();
     }
 
-    private Task createTask(Long id, String title, TaskStatus status, Priority priority, boolean deleted) {
+    private static Task createTask(Long id, String title, TaskStatus status, Priority priority, boolean deleted) {
         return Task.builder()
                 .id(id)
                 .title(title)
@@ -68,17 +68,17 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should create a task and assign it to the current user")
         void shouldCreateTaskAndAssignCurrentUser() {
-            //Arrange
+            // Arrange
             User user = createUser(1L, "test user", "user@test.com", List.of(Role.ROLE_USER));
             TaskRequestDTO request = new TaskRequestDTO("test task", null, TaskStatus.TODO, Priority.MEDIUM, null);
 
             when(currentUserService.getCurrentUser()).thenReturn(user);
             when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            //Act
+            // Act
             TaskResponseDTO response = taskService.createTask(request);
 
-            //Assert
+            // Assert
             assertNotNull(response);
             assertEquals("test task", response.title());
 
@@ -99,7 +99,7 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should return tasks belonging to the current user")
         void shouldReturnTasksForCurrentUser() {
-            //Arrange
+            // Arrange
             Long userId = 2L;
             TaskStatus status = TaskStatus.IN_PROGRESS;
             Priority priority = Priority.LOW;
@@ -112,10 +112,10 @@ public class TaskServiceTest {
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
-            //Act
+            // Act
             Page<TaskResponseDTO> response = taskService.getTasks(status, priority, pageable);
 
-            //Assert
+            // Assert
             assertNotNull(response);
             assertEquals(1, response.getTotalElements());
             assertEquals(1, response.getContent().size());
@@ -131,7 +131,7 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should return empty page when user has no tasks")
         void shouldReturnEmptyPageWhenUserHasNoTasks() {
-            //Arrange
+            // Arrange
             Long userId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
             Page<Task> taskPage = new PageImpl<>(List.of(), pageable, 0);
@@ -139,10 +139,10 @@ public class TaskServiceTest {
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
-            //Act
+            // Act
             Page<TaskResponseDTO> response = taskService.getTasks(null, null, pageable);
 
-            //Assert
+            // Assert
             assertNotNull(response);
             assertEquals(0, response.getTotalElements());
             assertTrue(response.getContent().isEmpty());
@@ -157,7 +157,7 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should return deleted tasks when current user is admin")
         void shouldReturnDeletedTasksWhenAdmin() {
-            //Arrange
+            // Arrange
             User user = createUser(2L, "admin test", "admin@test.com", List.of(Role.ROLE_ADMIN, Role.ROLE_USER));
             Task delTask = createTask(2L, "task 2", TaskStatus.TODO, Priority.HIGH, true);
             Pageable pageable = PageRequest.of(0, 10);
@@ -166,10 +166,10 @@ public class TaskServiceTest {
             when(currentUserService.isAdmin()).thenReturn(true);
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
-            //Act
+            // Act
             Page<TaskResponseDTO> response = taskService.getDeletedTasks(null, null, user.getId(), pageable);
 
-            //Assert
+            // Assert
             assertNotNull(response);
             assertEquals(1, response.getTotalElements());
             assertEquals(1, response.getContent().size());
@@ -182,18 +182,41 @@ public class TaskServiceTest {
         }
 
         @Test
+        @DisplayName("Should return deleted tasks filtered by user when admin provides userId")
+        void shouldReturnDeletedTasksFilteredByUser() {
+            // Arrange
+            Long userId = 2L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Task deletedTask = createTask(1L, "deleted task", TaskStatus.TODO, Priority.MEDIUM, true);
+            deletedTask.setUser(createUser(userId, "user", "user@test.com", List.of(Role.ROLE_USER)));
+
+            Page<Task> page = new PageImpl<>(List.of(deletedTask), pageable, 1);
+
+            when(currentUserService.isAdmin()).thenReturn(true);
+            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(page);
+
+            // Act
+            Page<TaskResponseDTO> response = taskService.getDeletedTasks(null, null, userId, pageable);
+
+            // Assert
+            assertEquals(1, response.getTotalElements());
+            assertEquals(userId, deletedTask.getUser().getId());
+            verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
+        }
+
+        @Test
         @DisplayName("Should throw UnauthorizedException when user is not admin")
         void shouldThrowUnauthorizedWhenUserIsNotAdmin() {
-            //Arrange
+            // Arrange
             when(currentUserService.isAdmin()).thenReturn(false);
 
-            //Act/Assert
+            // Act/Assert
             assertThatThrownBy(() ->
                     taskService.getDeletedTasks(null, null, null, PageRequest.of(0, 10)))
                     .isInstanceOf(UnauthorizedException.class)
                     .hasMessage("Only admins can view deleted tasks");
         }
-
     }
 
     @Nested
@@ -203,7 +226,7 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should return task when task exists and user has access")
         void shouldReturnTaskWhenTaskExistsAndUserHasAccess() {
-            //Arrange
+            // Arrange
             Long taskId = 1L;
             Long userId = 2L;
             Task task = createTask(taskId, "test task", TaskStatus.TODO, Priority.MEDIUM, false);
@@ -211,10 +234,10 @@ public class TaskServiceTest {
             when(taskRepository.findByIdAndDeletedFalse(taskId)).thenReturn(Optional.of(task));
             doNothing().when(currentUserService).checkOwnershipOrAdmin(userId);
 
-            //Act
+            // Act
             TaskResponseDTO response = taskService.getTaskById(1L);
 
-            //Assert
+            // Assert
             assertNotNull(response);
             assertEquals(task.getTitle(), response.title());
             assertEquals(task.getId(), response.id());
@@ -227,11 +250,11 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should throw NotFoundException when task does not exist")
         void shouldThrowNotFoundWhenTaskDoesNotExist() {
-            //Arrange
+            // Arrange
             Long taskId = 1L;
             when(taskRepository.findByIdAndDeletedFalse(taskId)).thenReturn(Optional.empty());
 
-            //Act/Assert
+            // Act/Assert
             assertThatThrownBy(() -> taskService.getTaskById(taskId))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessage("Task not found");
@@ -245,7 +268,7 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should update task when task exists and user has permission")
         void shouldUpdateTaskWhenTaskExistsAndUserHasPermission() {
-            //Arrange
+            // Arrange
             Long taskId = 1L;
             Long userId = 2L;
             Task task = createTask(taskId, "test task", TaskStatus.TODO, Priority.MEDIUM, false);
@@ -256,10 +279,10 @@ public class TaskServiceTest {
             doNothing().when(currentUserService).checkOwnershipOrAdmin(userId);
             when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            //Act
+            // Act
             TaskResponseDTO response = taskService.updateTask(taskId, request);
 
-            //Assert
+            // Assert
             assertNotNull(response);
             assertEquals("updated task", response.title());
             assertEquals(TaskStatus.IN_PROGRESS, response.status());
@@ -279,13 +302,13 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should throw NotFoundException when task to update does not exist")
         void shouldThrowNotFoundWhenUpdatingNonExistingTask() {
-            //Arrange
+            // Arrange
             Long taskId = 1L;
             TaskRequestDTO request = new TaskRequestDTO("updated task", null, TaskStatus.IN_PROGRESS, Priority.HIGH,
                     null);
             when(taskRepository.findByIdAndDeletedFalse(taskId)).thenReturn(Optional.empty());
 
-            //Act/Assert
+            // Act/Assert
             assertThatThrownBy(() -> taskService.updateTask(taskId, request))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessage("Task not found");
@@ -299,7 +322,7 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should mark task as deleted when task exists and user has permission")
         void shouldSoftDeleteTaskWhenUserHasPermission() {
-            //Arrange
+            // Arrange
             Long taskId = 2L;
             Long userId = 1L;
             Task task = createTask(taskId, "test task", TaskStatus.TODO, Priority.MEDIUM, false);
@@ -308,10 +331,10 @@ public class TaskServiceTest {
             doNothing().when(currentUserService).checkOwnershipOrAdmin(userId);
             when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            //Act
+            // Act
             taskService.deleteTask(taskId);
 
-            //Assert
+            // Assert
             assertTrue(task.isDeleted());
             verify(taskRepository).findByIdAndDeletedFalse(taskId);
             verify(currentUserService).checkOwnershipOrAdmin(userId);
@@ -321,11 +344,11 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should throw NotFoundException when deleting non existing task")
         void shouldThrowNotFoundWhenDeletingNonExistingTask() {
-            //Arrange
+            // Arrange
             Long taskId = 2L;
             when(taskRepository.findByIdAndDeletedFalse(taskId)).thenReturn(Optional.empty());
 
-            //Act/Assert
+            // Act/Assert
             assertThatThrownBy(() -> taskService.deleteTask(taskId))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessage("Task not found");
@@ -339,17 +362,17 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should restore deleted task when current user is admin")
         void shouldRestoreTaskWhenAdmin() {
-            //Arrange
+            // Arrange
             Long taskId = 2L;
             Task delTask = createTask(taskId, "task 2", TaskStatus.TODO, Priority.HIGH, true);
             when(currentUserService.isAdmin()).thenReturn(true);
             when(taskRepository.findByIdAndDeletedTrue(taskId)).thenReturn(Optional.of(delTask));
             when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            //Act
+            // Act
             taskService.restoreTask(taskId);
 
-            //Assert
+            // Assert
             assertFalse(delTask.isDeleted());
             verify(currentUserService).isAdmin();
             verify(taskRepository).findByIdAndDeletedTrue(taskId);
@@ -359,11 +382,11 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should throw UnauthorizedException when non admin tries to restore task")
         void shouldThrowUnauthorizedWhenNonAdminRestoresTask() {
-            //Arrange
+            // Arrange
             Long taskId = 1L;
             when(currentUserService.isAdmin()).thenReturn(false);
 
-            //Act/Assert
+            // Act/Assert
             assertThatThrownBy(() -> taskService.restoreTask(taskId))
                     .isInstanceOf(UnauthorizedException.class)
                     .hasMessage("Only admins can restore tasks");
@@ -372,12 +395,12 @@ public class TaskServiceTest {
         @Test
         @DisplayName("Should throw NotFoundException when deleted task does not exist")
         void shouldThrowNotFoundWhenRestoringNonExistingTask() {
-            //Arrange
+            // Arrange
             Long taskId = 2L;
             when(currentUserService.isAdmin()).thenReturn(true);
             when(taskRepository.findByIdAndDeletedTrue(taskId)).thenReturn(Optional.empty());
 
-            //Act/Assert
+            // Act/Assert
             assertThatThrownBy(() -> taskService.restoreTask(taskId))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessage("Task not found");
