@@ -50,9 +50,11 @@ public class TaskController {
             @RequestParam(required = false) TaskStatus status,
             @Parameter(description = "Filter by task priority")
             @RequestParam(required = false) Priority priority,
+            @Parameter(description = "Filter by user ID")
+            @RequestParam(required = false) Long userId,
             @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseUtils.success(taskService.getTasks(status, priority, pageable));
+        return ResponseUtils.success(taskService.getTasks(status, priority, userId, pageable));
     }
 
     @Operation(summary = "Get task by ID")
