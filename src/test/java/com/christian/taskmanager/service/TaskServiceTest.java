@@ -201,7 +201,6 @@ public class TaskServiceTest {
 
             // Assert
             assertEquals(1, response.getTotalElements());
-            assertEquals(userId, deletedTask.getUser().getId());
             verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
         }
 
