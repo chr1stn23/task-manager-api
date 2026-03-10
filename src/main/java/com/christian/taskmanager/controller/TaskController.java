@@ -91,7 +91,7 @@ public class TaskController {
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Access denied")
     })
-    @DeleteMapping("/{id}")
+    @PatchMapping("/{id}")
     public ApiResponseWrapper<String> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
         return ResponseUtils.success("Task deleted successfully");
