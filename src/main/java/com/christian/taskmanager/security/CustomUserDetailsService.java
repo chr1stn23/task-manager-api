@@ -2,6 +2,7 @@ package com.christian.taskmanager.security;
 
 import com.christian.taskmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,8 +16,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmailWithRolesAndEnabledTrue(email)
+        UserDetails user = userRepository.findByEmailWithRoles(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found with email: " + email));
+
+        if (!user.isEnabled()) {
+            throw new DisabledException("disabled");
+        }
+
+        return user;
     }
 }
