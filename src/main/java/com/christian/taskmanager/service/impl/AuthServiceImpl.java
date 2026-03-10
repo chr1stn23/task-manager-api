@@ -7,6 +7,7 @@ import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.EmailAlreadyExistsException;
 import com.christian.taskmanager.exception.InvalidCredentialsException;
+import com.christian.taskmanager.exception.UserDisabledException;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.JwtService;
 import com.christian.taskmanager.service.AuthService;
@@ -47,10 +48,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponseDTO login(AuthRequestDTO request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials."));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new InvalidCredentialsException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials.");
+        }
+
+        if (!user.isEnabled()) {
+            throw new UserDisabledException("User is disabled.");
         }
 
         String token = jwtService.generateToken(user.getEmail());

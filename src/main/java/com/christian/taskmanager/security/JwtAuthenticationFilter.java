@@ -3,6 +3,7 @@ package com.christian.taskmanager.security;
 import com.christian.taskmanager.exception.ExpiredTokenException;
 import com.christian.taskmanager.exception.InvalidTokenException;
 import com.christian.taskmanager.exception.TokenProcessingException;
+import com.christian.taskmanager.exception.UserDisabledException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -64,7 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (ExpiredJwtException e) {
             entryPoint.commence(request, response, new ExpiredTokenException());
         } catch (DisabledException e) {
-            entryPoint.commence(request, response, e);
+            entryPoint.commence(request, response, new UserDisabledException());
         } catch (Exception e) {
             entryPoint.commence(request, response, new TokenProcessingException());
         }

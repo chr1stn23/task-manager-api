@@ -39,6 +39,13 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(ex.getMessage(), "INVALID_CREDENTIALS"));
     }
 
+    @ExceptionHandler(UserDisabledException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleUserDisabled(UserDisabledException ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ResponseUtils.error(ex.getMessage(), "USER_DISABLED"));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleValidationErrors(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult()
