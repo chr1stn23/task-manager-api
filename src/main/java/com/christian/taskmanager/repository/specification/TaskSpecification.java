@@ -5,6 +5,8 @@ import com.christian.taskmanager.entity.Task;
 import com.christian.taskmanager.entity.TaskStatus;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Objects;
+
 public class TaskSpecification {
 
     public static Specification<Task> hasStatus(TaskStatus status) {
@@ -22,8 +24,8 @@ public class TaskSpecification {
                 userId == null ? null : cb.equal(root.get("user").get("id"), userId);
     }
 
-    public static Specification<Task> isDeleted(boolean deleted) {
+    public static Specification<Task> isDeleted(Boolean deleted) {
         return (root, query, cb) ->
-                cb.equal(root.get("deleted"), deleted);
+                cb.equal(root.get("deleted"), Objects.requireNonNullElse(deleted, false));
     }
 }

@@ -11,9 +11,7 @@ public interface TaskService {
 
     TaskResponseDTO createTask(TaskRequestDTO request);
 
-    Page<TaskResponseDTO> getTasks(TaskStatus status, Priority priority, Long userId, Pageable pageable);
-
-    Page<TaskResponseDTO> getDeletedTasks(TaskStatus status, Priority priority, Long userId, Pageable pageable);
+    Page<TaskResponseDTO> getTasks(Boolean deleted, TaskStatus status, Priority priority, Long userId, Pageable pageable);
 
     TaskResponseDTO getTaskById(Long id);
 

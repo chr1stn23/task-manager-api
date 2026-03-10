@@ -95,9 +95,10 @@ public class TaskServiceTest {
     @Nested
     @DisplayName("getTasks")
     class GetTasksTests {
+
         @Test
-        @DisplayName("Should return tasks belonging to the current user")
-        void shouldReturnTasksForCurrentUser() {
+        @DisplayName("Should return active tasks belonging to the current user")
+        void shouldReturnActiveTasksForCurrentUser() {
             // Arrange
             Long userId = 2L;
             TaskStatus status = TaskStatus.IN_PROGRESS;
@@ -113,18 +114,43 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(status, priority, null, pageable);
+            Page<TaskResponseDTO> response = taskService.getTasks(false, status, priority, null, pageable);
 
             // Assert
             assertNotNull(response);
             assertEquals(1, response.getTotalElements());
-            assertEquals(1, response.getContent().size());
             TaskResponseDTO dto = response.getContent().getFirst();
             assertEquals(task.getTitle(), dto.title());
             assertEquals(task.getId(), dto.id());
             assertEquals(task.getStatus(), dto.status());
             assertEquals(task.getPriority(), dto.priority());
+            verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
+        }
 
+        @Test
+        @DisplayName("Should return deleted tasks belonging to the current user (trash)")
+        void shouldReturnDeletedTasksForCurrentUser() {
+            // Arrange
+            Long userId = 2L;
+            Pageable pageable = PageRequest.of(0, 10);
+            User user = createUser(userId, "test user", "user@test.com", List.of(Role.ROLE_USER));
+            Task deletedTask = createTask(1L, "deleted task", TaskStatus.IN_PROGRESS, Priority.LOW, true);
+            deletedTask.setUser(user);
+            Page<Task> taskPage = new PageImpl<>(List.of(deletedTask), pageable, 1);
+
+            when(currentUserService.getCurrentUserId()).thenReturn(userId);
+            when(currentUserService.isAdmin()).thenReturn(false);
+            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
+
+            // Act
+            Page<TaskResponseDTO> response = taskService.getTasks(true, null, null, null, pageable);
+
+            // Assert
+            assertNotNull(response);
+            assertEquals(1, response.getTotalElements());
+            TaskResponseDTO dto = response.getContent().getFirst();
+            assertEquals(deletedTask.getTitle(), dto.title());
+            assertEquals(deletedTask.getId(), dto.id());
             verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
         }
 
@@ -141,7 +167,7 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(null, null, null, pageable);
+            Page<TaskResponseDTO> response = taskService.getTasks(null, null, null, null, pageable);
 
             // Assert
             assertNotNull(response);
@@ -156,26 +182,47 @@ public class TaskServiceTest {
             // Arrange
             Long adminId = 99L;
             Pageable pageable = PageRequest.of(0, 10);
-
             User user1 = createUser(1L, "user1", "user1@test.com", List.of(Role.ROLE_USER));
             Task task = createTask(1L, "task 1", TaskStatus.TODO, Priority.HIGH, false);
             task.setUser(user1);
-
             Page<Task> taskPage = new PageImpl<>(List.of(task), pageable, 1);
 
             when(currentUserService.getCurrentUserId()).thenReturn(adminId);
             when(currentUserService.isAdmin()).thenReturn(true);
-            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
-                    .thenReturn(taskPage);
+            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(null, null, 1L, pageable);
+            Page<TaskResponseDTO> response = taskService.getTasks(false, null, null, 1L, pageable);
 
             // Assert
             assertNotNull(response);
             assertEquals(1, response.getTotalElements());
             assertEquals("task 1", response.getContent().getFirst().title());
+            verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
+        }
 
+        @Test
+        @DisplayName("Should allow admin to see deleted tasks from any user")
+        void shouldAllowAdminToSeeDeletedTasksFromAnyUser() {
+            // Arrange
+            Long adminId = 99L;
+            Pageable pageable = PageRequest.of(0, 10);
+            User user = createUser(1L, "user", "user@test.com", List.of(Role.ROLE_USER));
+            Task deletedTask = createTask(1L, "deleted task", TaskStatus.TODO, Priority.HIGH, true);
+            deletedTask.setUser(user);
+            Page<Task> taskPage = new PageImpl<>(List.of(deletedTask), pageable, 1);
+
+            when(currentUserService.getCurrentUserId()).thenReturn(adminId);
+            when(currentUserService.isAdmin()).thenReturn(true);
+            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
+
+            // Act
+            Page<TaskResponseDTO> response = taskService.getTasks(true, null, null, null, pageable);
+
+            // Assert
+            assertNotNull(response);
+            assertEquals(1, response.getTotalElements());
+            assertEquals("deleted task", response.getContent().getFirst().title());
             verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
         }
 
@@ -186,11 +233,9 @@ public class TaskServiceTest {
             Long currentUserId = 1L;
             Long requestedUserId = 2L;
             Pageable pageable = PageRequest.of(0, 10);
-
             User user = createUser(currentUserId, "user", "user@test.com", List.of(Role.ROLE_USER));
             Task task = createTask(1L, "task", TaskStatus.TODO, Priority.LOW, false);
             task.setUser(user);
-
             Page<Task> taskPage = new PageImpl<>(List.of(task), pageable, 1);
 
             when(currentUserService.getCurrentUserId()).thenReturn(currentUserId);
@@ -198,140 +243,10 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response =
-                    taskService.getTasks(null, null, requestedUserId, pageable);
+            Page<TaskResponseDTO> response = taskService.getTasks(false, null, null, requestedUserId, pageable);
 
             // Assert
             assertEquals(1, response.getTotalElements());
-
-            verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
-        }
-    }
-
-    @Nested
-    @DisplayName("getDeletedTasks")
-    class GetDeletedTasksTests {
-
-        @Test
-        @DisplayName("Should return deleted tasks belonging to the current user")
-        void shouldReturnDeletedTasksForCurrentUser() {
-            // Arrange
-            Long userId = 2L;
-            TaskStatus status = TaskStatus.IN_PROGRESS;
-            Priority priority = Priority.LOW;
-            Pageable pageable = PageRequest.of(0, 10);
-
-            User user = createUser(userId, "test user", "user@test.com", List.of(Role.ROLE_USER));
-            Task deletedTask = createTask(1L, "deleted task", status, priority, true);
-            deletedTask.setUser(user);
-
-            Page<Task> taskPage = new PageImpl<>(List.of(deletedTask), pageable, 1);
-
-            when(currentUserService.getCurrentUserId()).thenReturn(userId);
-            when(currentUserService.isAdmin()).thenReturn(false);
-            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
-                    .thenReturn(taskPage);
-
-            // Act
-            Page<TaskResponseDTO> response =
-                    taskService.getDeletedTasks(status, priority, null, pageable);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(1, response.getTotalElements());
-            assertEquals(1, response.getContent().size());
-
-            TaskResponseDTO dto = response.getContent().getFirst();
-            assertEquals(deletedTask.getTitle(), dto.title());
-            assertEquals(deletedTask.getId(), dto.id());
-            assertEquals(deletedTask.getStatus(), dto.status());
-            assertEquals(deletedTask.getPriority(), dto.priority());
-
-            verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("Should return empty page when user has no deleted tasks")
-        void shouldReturnEmptyPageWhenUserHasNoDeletedTasks() {
-            // Arrange
-            Long userId = 1L;
-            Pageable pageable = PageRequest.of(0, 10);
-
-            Page<Task> taskPage = new PageImpl<>(List.of(), pageable, 0);
-
-            when(currentUserService.getCurrentUserId()).thenReturn(userId);
-            when(currentUserService.isAdmin()).thenReturn(false);
-            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
-                    .thenReturn(taskPage);
-
-            // Act
-            Page<TaskResponseDTO> response =
-                    taskService.getDeletedTasks(null, null, null, pageable);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(0, response.getTotalElements());
-            assertTrue(response.getContent().isEmpty());
-
-            verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("Should allow admin to see deleted tasks from any user")
-        void shouldAllowAdminToSeeDeletedTasksFromAnyUser() {
-            // Arrange
-            Long adminId = 99L;
-            Pageable pageable = PageRequest.of(0, 10);
-
-            User user = createUser(1L, "user", "user@test.com", List.of(Role.ROLE_USER));
-            Task deletedTask = createTask(1L, "deleted task", TaskStatus.TODO, Priority.HIGH, true);
-            deletedTask.setUser(user);
-
-            Page<Task> taskPage = new PageImpl<>(List.of(deletedTask), pageable, 1);
-
-            when(currentUserService.getCurrentUserId()).thenReturn(adminId);
-            when(currentUserService.isAdmin()).thenReturn(true);
-            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
-                    .thenReturn(taskPage);
-
-            // Act
-            Page<TaskResponseDTO> response =
-                    taskService.getDeletedTasks(null, null, null, pageable);
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(1, response.getTotalElements());
-            assertEquals("deleted task", response.getContent().getFirst().title());
-
-            verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
-        }
-
-        @Test
-        @DisplayName("Should filter deleted tasks by userId when current user is admin")
-        void shouldFilterDeletedTasksByUserIdWhenAdmin() {
-            // Arrange
-            Long adminId = 99L;
-            Long userId = 2L;
-            Pageable pageable = PageRequest.of(0, 10);
-
-            User user = createUser(userId, "user", "user@test.com", List.of(Role.ROLE_USER));
-            Task deletedTask = createTask(1L, "deleted task", TaskStatus.TODO, Priority.MEDIUM, true);
-            deletedTask.setUser(user);
-
-            Page<Task> taskPage = new PageImpl<>(List.of(deletedTask), pageable, 1);
-
-            when(currentUserService.getCurrentUserId()).thenReturn(adminId);
-            when(currentUserService.isAdmin()).thenReturn(true);
-            when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable)))
-                    .thenReturn(taskPage);
-
-            // Act
-            Page<TaskResponseDTO> response =
-                    taskService.getDeletedTasks(null, null, userId, pageable);
-
-            // Assert
-            assertEquals(1, response.getTotalElements());
-
             verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable));
         }
     }

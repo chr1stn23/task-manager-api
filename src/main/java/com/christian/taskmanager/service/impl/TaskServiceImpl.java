@@ -40,31 +40,18 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TaskResponseDTO> getTasks(TaskStatus status, Priority priority, Long userId, Pageable pageable) {
-        return getTasksByDeleted(false, status, priority, userId, pageable);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<TaskResponseDTO> getDeletedTasks(TaskStatus status, Priority priority, Long userId, Pageable pageable) {
-        return getTasksByDeleted(true, status, priority, userId, pageable);
-    }
-
-    private Page<TaskResponseDTO> getTasksByDeleted(boolean deleted, TaskStatus status, Priority priority, Long userId,
+    public Page<TaskResponseDTO> getTasks(Boolean deleted, TaskStatus status, Priority priority, Long userId,
             Pageable pageable) {
         Long currentUserId = currentUserService.getCurrentUserId();
         boolean isAdmin = currentUserService.isAdmin();
 
+        Long effectiveUserId = isAdmin ? userId : currentUserId;
+
         Specification<Task> spec = Specification
                 .where(TaskSpecification.isDeleted(deleted))
                 .and(TaskSpecification.hasStatus(status))
-                .and(TaskSpecification.hasPriority(priority));
-
-        if (!isAdmin) {
-            spec = spec.and(TaskSpecification.belongsToUserId(currentUserId));
-        } else {
-            spec = spec.and(TaskSpecification.belongsToUserId(userId));
-        }
+                .and(TaskSpecification.hasPriority(priority))
+                .and(TaskSpecification.belongsToUserId(effectiveUserId));
 
         return taskRepository
                 .findAll(spec, pageable)

@@ -46,6 +46,8 @@ public class TaskController {
     })
     @GetMapping
     public ApiResponseWrapper<Page<TaskResponseDTO>> getTasks(
+            @Parameter(description = "Filter by deleted status")
+            @RequestParam(required = false) Boolean deleted,
             @Parameter(description = "Filter by task status")
             @RequestParam(required = false) TaskStatus status,
             @Parameter(description = "Filter by task priority")
@@ -54,7 +56,7 @@ public class TaskController {
             @RequestParam(required = false) Long userId,
             @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseUtils.success(taskService.getTasks(status, priority, userId, pageable));
+        return ResponseUtils.success(taskService.getTasks(deleted, status, priority, userId, pageable));
     }
 
     @Operation(summary = "Get task by ID")
@@ -106,24 +108,5 @@ public class TaskController {
     public ApiResponseWrapper<String> restoreTask(@PathVariable Long id) {
         taskService.restoreTask(id);
         return ResponseUtils.success("Task restored successfully");
-    }
-
-    @Operation(summary = "Get all deleted tasks")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Tasks retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    @GetMapping("/deleted")
-    public ApiResponseWrapper<Page<TaskResponseDTO>> getDeletedTasks(
-            @Parameter(description = "Filter by task status")
-            @RequestParam(required = false) TaskStatus status,
-            @Parameter(description = "Filter by task priority")
-            @RequestParam(required = false) Priority priority,
-            @Parameter(description = "Filter by user ID")
-            @RequestParam(required = false) Long userId,
-            @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        Page<TaskResponseDTO> tasks = taskService.getDeletedTasks(status, priority, userId, pageable);
-        return ResponseUtils.success(tasks);
     }
 }
