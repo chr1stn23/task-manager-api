@@ -1,0 +1,28 @@
+package com.christian.taskmanager.mapper;
+
+import com.christian.taskmanager.dto.request.UserCreateDTO;
+import com.christian.taskmanager.dto.response.UserResponseDTO;
+import com.christian.taskmanager.entity.Role;
+import com.christian.taskmanager.entity.User;
+
+public class UserMapper {
+
+    public static User toEntity(UserCreateDTO dto) {
+        return User.builder()
+                .name(dto.name())
+                .email(dto.email())
+                .roles(dto.roles())
+                .enabled(dto.enabled())
+                .build();
+    }
+
+    public static UserResponseDTO toDTO(User user) {
+        return new UserResponseDTO(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRoles().stream().map(Role::name).toList(),
+                user.isEnabled()
+        );
+    }
+}
