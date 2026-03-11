@@ -61,7 +61,7 @@ public class TaskController {
 
     @Operation(summary = "Get task by ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Task found"),
+            @ApiResponse(responseCode = "200", description = "Task found"),
             @ApiResponse(responseCode = "400", description = "Task not found"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Access denied")
