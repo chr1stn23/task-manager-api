@@ -39,6 +39,7 @@ public class User extends BaseEntity implements UserDetails {
     private List<Task> tasks = new ArrayList<>();
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
 
     @Override
