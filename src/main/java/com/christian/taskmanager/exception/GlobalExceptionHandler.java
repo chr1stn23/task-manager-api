@@ -4,6 +4,7 @@ import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.util.ResponseUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -23,6 +24,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ResponseUtils.error(ex.getMessage(), "ACCESS_DENIED"));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleAccessDenied() {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ResponseUtils.error("You do not have permission to access this resource", "ACCESS_DENIED"));
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)

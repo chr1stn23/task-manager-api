@@ -3,6 +3,7 @@ package com.christian.taskmanager.service.impl;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
+import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
@@ -19,6 +20,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +42,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserResponseDTO> getUsers(String name, String email, Boolean enabled, Pageable pageable) {
+    public Page<UserListResponseDTO> getUsers(String name, String email, Boolean enabled, Pageable pageable) {
         Specification<User> spec = Specification
                 .where(UserSpecification.isEnabled(enabled))
                 .and(UserSpecification.isNameLike(name))
@@ -47,7 +50,7 @@ public class UserServiceImpl implements UserService {
 
         return userRepository
                 .findAll(spec, pageable)
-                .map(UserMapper::toDTO);
+                .map(UserMapper::toListDTO);
     }
 
     @Override
@@ -55,8 +58,10 @@ public class UserServiceImpl implements UserService {
     public UserResponseDTO getUserById(Long id) {
         currentUserService.checkOwnershipOrAdmin(id);
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        Long currentUserId = currentUserService.getCurrentUserId();
+        User user = Objects.equals(currentUserId, id)
+                ? currentUserService.getCurrentUser()
+                : userRepository.findByIdWithRoles(id).orElseThrow(() -> new NotFoundException("User not found"));
 
         return UserMapper.toDTO(user);
     }
@@ -64,7 +69,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDTO updateByAdmin(Long id, UserUpdateByAdminDTO request) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdWithRoles(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         Long currentId = currentUserService.getCurrentUserId();
@@ -95,10 +100,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponseDTO updateBySelf(Long id, UserUpdateBySelfDTO request) {
-        currentUserService.checkOwnershipOrAdmin(id);
+    public UserResponseDTO updateBySelf(UserUpdateBySelfDTO request) {
+        Long currentUserId = currentUserService.getCurrentUserId();
 
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdWithRoles(currentUserId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         user.setName(request.name());
