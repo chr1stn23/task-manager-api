@@ -5,6 +5,7 @@ import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.TaskStatus;
+import com.christian.taskmanager.security.CurrentUserService;
 import com.christian.taskmanager.service.TaskService;
 import com.christian.taskmanager.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class TaskController {
 
     private final TaskService taskService;
+    private final CurrentUserService currentUserService;
 
     @Operation(summary = "Create a new task")
     @ApiResponses(value = {
@@ -52,11 +54,10 @@ public class TaskController {
             @RequestParam(required = false) TaskStatus status,
             @Parameter(description = "Filter by task priority")
             @RequestParam(required = false) Priority priority,
-            @Parameter(description = "Filter by user ID")
-            @RequestParam(required = false) Long userId,
             @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseUtils.success(taskService.getTasks(deleted, status, priority, userId, pageable));
+        Long currentUserId = currentUserService.getCurrentUserId();
+        return ResponseUtils.success(taskService.getTasks(deleted, status, priority, currentUserId, pageable));
     }
 
     @Operation(summary = "Get task by ID")

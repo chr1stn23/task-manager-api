@@ -56,8 +56,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponseDTO getUserById(Long id) {
-        currentUserService.checkOwnershipOrAdmin(id);
-
         Long currentUserId = currentUserService.getCurrentUserId();
         User user = Objects.equals(currentUserId, id)
                 ? currentUserService.getCurrentUser()
@@ -120,6 +118,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void disableUser(Long id) {
         currentUserService.checkOwnershipOrAdmin(id);
+
+        Long currentId = currentUserService.getCurrentUserId();
+        boolean isAdmin = currentUserService.isAdmin();
+
+        if (isAdmin && id.equals(currentId)) {
+            throw new IllegalStateException("Cannot disable yourself");
+        }
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));

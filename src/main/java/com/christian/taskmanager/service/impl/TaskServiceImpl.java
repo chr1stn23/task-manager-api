@@ -42,16 +42,11 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     public Page<TaskResponseDTO> getTasks(Boolean deleted, TaskStatus status, Priority priority, Long userId,
             Pageable pageable) {
-        Long currentUserId = currentUserService.getCurrentUserId();
-        boolean isAdmin = currentUserService.isAdmin();
-
-        Long effectiveUserId = isAdmin ? userId : currentUserId;
-
         Specification<Task> spec = Specification
                 .where(TaskSpecification.isDeleted(deleted))
                 .and(TaskSpecification.hasStatus(status))
                 .and(TaskSpecification.hasPriority(priority))
-                .and(TaskSpecification.belongsToUserId(effectiveUserId));
+                .and(TaskSpecification.belongsToUserId(userId));
 
         return taskRepository
                 .findAll(spec, pageable)

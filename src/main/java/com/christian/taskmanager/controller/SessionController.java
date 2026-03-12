@@ -2,6 +2,7 @@ package com.christian.taskmanager.controller;
 
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.dto.response.SessionResponseDTO;
+import com.christian.taskmanager.security.CurrentUserService;
 import com.christian.taskmanager.service.SessionService;
 import com.christian.taskmanager.util.ResponseUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,30 +21,19 @@ import java.util.List;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final CurrentUserService currentUserService;
 
-    @Operation(summary = "Get sessions for a user")
+    @Operation(summary = "Get sessions from current user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Sessions retrieved successful"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
     public ApiResponseWrapper<List<SessionResponseDTO>> getSessions(
-            @RequestParam Long userId,
             @CookieValue(value = "refreshToken", required = false) String currentRefreshToken
     ) {
-        return ResponseUtils.success(sessionService.getSessions(userId, currentRefreshToken));
-    }
-
-    @Operation(summary = "Revoke session by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Sessions revoked successful"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "404", description = "Session not found")
-    })
-    @DeleteMapping("/{sessionId}")
-    public ApiResponseWrapper<String> revokeSession(@PathVariable Long sessionId) {
-        sessionService.revokeSession(sessionId);
-        return ResponseUtils.success("Session revoked successfully");
+        Long currentUserId = currentUserService.getCurrentUserId();
+        return ResponseUtils.success(sessionService.getSessions(currentUserId, currentRefreshToken));
     }
 
     @Operation(summary = "Revoke all sessions from current user")
@@ -53,7 +43,20 @@ public class SessionController {
     })
     @DeleteMapping
     public ApiResponseWrapper<String> revokeAllSessions() {
-        sessionService.revokeAllSessions();
+        Long currentUserId = currentUserService.getCurrentUserId();
+        sessionService.revokeAllSessions(currentUserId);
         return ResponseUtils.success("All sessions revoked successfully");
+    }
+
+    @Operation(summary = "Revoke session by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Sessions revoked successful"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Session not found")
+    })
+    @DeleteMapping("/{id}")
+    public ApiResponseWrapper<String> revokeSession(@PathVariable Long id) {
+        sessionService.revokeSession(id);
+        return ResponseUtils.success("Session revoked successfully");
     }
 }

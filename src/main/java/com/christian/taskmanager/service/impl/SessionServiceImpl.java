@@ -23,12 +23,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional(readOnly = true)
     public List<SessionResponseDTO> getSessions(Long userId, String currentRefreshToken) {
-        Long currentUserId = currentUserService.getCurrentUserId();
-        boolean isAdmin = currentUserService.isAdmin();
-
-        Long effectiveUserId = isAdmin ? userId : currentUserId;
-
-        List<RefreshToken> tokens = refreshTokenRepository.findActiveSessionsByUserId(effectiveUserId, Instant.now());
+        List<RefreshToken> tokens = refreshTokenRepository.findActiveSessionsByUserId(userId, Instant.now());
 
         return tokens.stream()
                 .map(token -> new SessionResponseDTO(
@@ -45,12 +40,11 @@ public class SessionServiceImpl implements SessionService {
     @Transactional
     public void revokeSession(Long sessionId) {
         Long currentUserId = currentUserService.getCurrentUserId();
-        boolean isAdmin = currentUserService.isAdmin();
 
         RefreshToken token = refreshTokenRepository.findById(sessionId)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
 
-        if (!isAdmin && !token.getUser().getId().equals(currentUserId)) {
+        if (!token.getUser().getId().equals(currentUserId)) {
             throw new NotFoundException("Session not found");
         }
 
@@ -59,8 +53,20 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional
-    public void revokeAllSessions() {
-        Long currentUserId = currentUserService.getCurrentUserId();
-        refreshTokenRepository.revokeAllSessionsByUserId(currentUserId);
+    public void adminRevokeSession(Long userId, Long sessionId) {
+        RefreshToken token = refreshTokenRepository.findById(sessionId)
+                .orElseThrow(() -> new NotFoundException("Session not found"));
+
+        if (!token.getUser().getId().equals(userId)) {
+            throw new NotFoundException("Session not found");
+        }
+
+        token.setRevoked(true);
+    }
+
+    @Override
+    @Transactional
+    public void revokeAllSessions(Long userId) {
+        refreshTokenRepository.revokeAllSessionsByUserId(userId);
     }
 }

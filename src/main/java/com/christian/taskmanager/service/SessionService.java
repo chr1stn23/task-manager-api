@@ -10,5 +10,7 @@ public interface SessionService {
 
     void revokeSession(Long sessionId);
 
-    void revokeAllSessions();
+    void adminRevokeSession(Long userId, Long sessionId);
+
+    void revokeAllSessions(Long userId);
 }
