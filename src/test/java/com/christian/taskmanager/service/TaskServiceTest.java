@@ -5,6 +5,7 @@ import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.entity.*;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.repository.TaskRepository;
+import com.christian.taskmanager.security.CurrentUserService;
 import com.christian.taskmanager.service.impl.TaskServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

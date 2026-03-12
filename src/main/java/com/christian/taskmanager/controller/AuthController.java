@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -36,10 +37,13 @@ public class AuthController {
     })
     @PostMapping("/register")
     public ResponseEntity<ApiResponseWrapper<AuthResponseDTO>> register(
-            @RequestBody @Valid RegisterRequestDTO request) {
+            @RequestBody @Valid RegisterRequestDTO request,
+            HttpServletRequest httpRequest
+    ) {
+        String userAgent = httpRequest.getHeader("User-Agent");
+        String ipAddress = extractIpAddress(httpRequest);
 
-        TokenPair tokens = authService.register(request);
-
+        TokenPair tokens = authService.register(request, userAgent, ipAddress);
         return buildAuthResponse(tokens);
     }
 
@@ -49,16 +53,26 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
     @PostMapping("/login")
-    public ResponseEntity<ApiResponseWrapper<AuthResponseDTO>> login(@RequestBody @Valid AuthRequestDTO request) {
-        TokenPair tokens = authService.login(request);
+    public ResponseEntity<ApiResponseWrapper<AuthResponseDTO>> login(
+            @RequestBody @Valid AuthRequestDTO request,
+            HttpServletRequest httpRequest
+    ) {
+        String userAgent = httpRequest.getHeader("User-Agent");
+        String ipAddress = extractIpAddress(httpRequest);
+
+        TokenPair tokens = authService.login(request, userAgent, ipAddress);
         return buildAuthResponse(tokens);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponseWrapper<AuthResponseDTO>> refresh(
-            @CookieValue(value = "refreshToken", required = false) String refreshToken
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletRequest httpRequest
     ) {
-        TokenPair tokens = authService.refresh(refreshToken);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        String ipAddress = extractIpAddress(httpRequest);
+
+        TokenPair tokens = authService.refresh(refreshToken, userAgent, ipAddress);
         return buildAuthResponse(tokens);
     }
 
@@ -95,5 +109,18 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(ResponseUtils.success(response));
+    }
+
+    private String extractIpAddress(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip)) {
+            return ip.split(",")[0].trim();
+        }
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && !ip.isBlank()) {
+            return ip;
+        }
+
+        return request.getRemoteAddr();
     }
 }

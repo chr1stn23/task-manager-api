@@ -33,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public TokenPair register(RegisterRequestDTO request) {
+    public TokenPair register(RegisterRequestDTO request, String userAgent, String ipAddress) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException("Email already registered");
         }
@@ -48,14 +48,14 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
 
         String accessToken = jwtService.generateToken(savedUser.getEmail());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser.getId());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser.getId(), userAgent, ipAddress);
 
         return new TokenPair(accessToken, refreshToken.getToken());
     }
 
     @Override
     @Transactional
-    public TokenPair login(AuthRequestDTO request) {
+    public TokenPair login(AuthRequestDTO request, String userAgent, String ipAddress) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials."));
 
@@ -68,14 +68,14 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String accessToken = jwtService.generateToken(user.getEmail());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId(), userAgent, ipAddress);
 
         return new TokenPair(accessToken, refreshToken.getToken());
     }
 
     @Override
     @Transactional
-    public TokenPair refresh(String refreshToken) {
+    public TokenPair refresh(String refreshToken, String userAgent, String ipAddress) {
         if (refreshToken == null) {
             throw new InvalidCredentialsException("Refresh token is required.");
         }
@@ -95,7 +95,7 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("Refresh token already used");
         }
 
-        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
+        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId(), userAgent, ipAddress);
         String newAccessToken = jwtService.generateToken(user.getEmail());
         return new TokenPair(newAccessToken, newRefreshToken.getToken());
     }
@@ -107,7 +107,10 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("Refresh token is required.");
         }
 
-        RefreshToken token = refreshTokenService.findByToken(refreshToken);
-        token.setRevoked(true);
+        int updated = refreshTokenRepository.revokeByToken(refreshToken);
+
+        if (updated == 0) {
+            throw new InvalidCredentialsException("Invalid refresh token");
+        }
     }
 }

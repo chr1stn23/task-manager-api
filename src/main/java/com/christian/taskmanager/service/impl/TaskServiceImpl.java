@@ -10,7 +10,7 @@ import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.mapper.TaskMapper;
 import com.christian.taskmanager.repository.TaskRepository;
 import com.christian.taskmanager.repository.specification.TaskSpecification;
-import com.christian.taskmanager.service.CurrentUserService;
+import com.christian.taskmanager.security.CurrentUserService;
 import com.christian.taskmanager.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

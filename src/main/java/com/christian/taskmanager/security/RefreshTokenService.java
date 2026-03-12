@@ -21,7 +21,7 @@ public class RefreshTokenService {
 
     private final Duration refreshTokenDuration = Duration.ofDays(7);
 
-    public RefreshToken createRefreshToken(Long userId) {
+    public RefreshToken createRefreshToken(Long userId, String userAgent, String ipAddress) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -30,6 +30,9 @@ public class RefreshTokenService {
                 .token(UUID.randomUUID().toString())
                 .expiryDate(Instant.now().plus(refreshTokenDuration))
                 .revoked(false)
+                .userAgent(userAgent)
+                .ipAddress(ipAddress)
+                .deviceName(parseDeviceName(userAgent))
                 .build();
 
         return refreshTokenRepository.save(token);
@@ -49,5 +52,13 @@ public class RefreshTokenService {
     public RefreshToken findByToken(String token) {
         return refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new NotFoundException("Refresh token not found"));
+    }
+
+    private String parseDeviceName(String userAgent) {
+        if (userAgent == null) return "Unknown";
+        if (userAgent.contains("Windows")) return "Windows Device";
+        if (userAgent.contains("Android")) return "Android Device";
+        if (userAgent.contains("iPhone")) return "iPhone";
+        return "Unknown Device";
     }
 }

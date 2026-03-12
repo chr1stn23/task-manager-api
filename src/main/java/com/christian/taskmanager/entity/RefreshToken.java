@@ -2,8 +2,10 @@ package com.christian.taskmanager.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -33,6 +35,17 @@ public class RefreshToken {
 
     private boolean revoked;
 
-    @ManyToOne
+    private String deviceName;
+
+    private String ipAddress;
+
+    @Column(length = 500)
+    private String userAgent;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 }
