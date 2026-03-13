@@ -7,6 +7,7 @@ import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
+import com.christian.taskmanager.exception.EmailAlreadyExistsException;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.mapper.UserMapper;
 import com.christian.taskmanager.repository.UserRepository;
@@ -34,8 +35,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDTO create(UserCreateDTO request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyExistsException("Email already registered");
+        }
+
         User user = UserMapper.toEntity(request);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setPassword(passwordEncoder.encode(request.password()));
         User saved = userRepository.save(user);
         return UserMapper.toDTO(saved);
     }
@@ -82,6 +87,10 @@ public class UserServiceImpl implements UserService {
             }
         }
 
+        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
+            throw new IllegalStateException("Email already registered");
+        }
+
         user.setName(request.name());
         user.setEmail(request.email());
 
@@ -103,6 +112,10 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepository.findByIdWithRoles(currentUserId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+
+        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
+            throw new IllegalStateException("Email already registered");
+        }
 
         user.setName(request.name());
         user.setEmail(request.email());
