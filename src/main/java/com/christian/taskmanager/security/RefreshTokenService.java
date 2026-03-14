@@ -56,9 +56,15 @@ public class RefreshTokenService {
 
     private String parseDeviceName(String userAgent) {
         if (userAgent == null) return "Unknown";
-        if (userAgent.contains("Windows")) return "Windows Device";
-        if (userAgent.contains("Android")) return "Android Device";
-        if (userAgent.contains("iPhone")) return "iPhone";
+
+        String uaLower = userAgent.toLowerCase();
+
+        if (uaLower.contains("iphone") || uaLower.contains("ipad")) return "iOS Device";
+        if (uaLower.contains("android")) return "Android Device";
+        if (uaLower.contains("windows")) return "Windows PC";
+        if (uaLower.contains("macintosh")) return "MacBook/iMac";
+        if (uaLower.contains("linux")) return "Linux Device";
+
         return "Unknown Device";
     }
 }
