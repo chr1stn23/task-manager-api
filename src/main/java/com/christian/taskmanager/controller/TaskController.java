@@ -72,7 +72,7 @@ public class TaskController {
         return ResponseUtils.success(taskService.getTaskById(id));
     }
 
-    @Operation(summary = "Update an existing task")
+    @Operation(summary = "Update a task")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Task updated successfully"),
             @ApiResponse(responseCode = "404", description = "Task not found"),

@@ -8,6 +8,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.Arrays;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -66,6 +69,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ResponseUtils.error(message, "VALIDATION_ERROR"));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+
+        String message;
+
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            Object[] enumValues = ex.getRequiredType().getEnumConstants();
+            message = "Invalid value for '" + ex.getName() + "'. Allowed values: " + Arrays.toString(enumValues);
+        } else {
+            message = "Invalid value for parameter: " + ex.getName();
+        }
+
+        return ResponseEntity
+                .badRequest()
+                .body(ResponseUtils.error(message, "INVALID_PARAMETER"));
     }
 
     @ExceptionHandler(BadRequestException.class)
