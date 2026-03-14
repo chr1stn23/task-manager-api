@@ -20,6 +20,6 @@ public class CurrentUserService {
     }
 
     public void checkOwnershipOrAdmin(Long userId) {
-        SecurityUtils.checkTaskOwnershipOrAdmin(userId);
+        SecurityUtils.checkOwnershipOrAdmin(userId);
     }
 }

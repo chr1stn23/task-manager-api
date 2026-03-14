@@ -9,16 +9,6 @@ import java.util.Objects;
 
 public class SecurityUtils {
 
-    public static String getCurrentUserEmail() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("User not authenticated");
-        }
-
-        return authentication.getName();
-    }
-
     public static User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -45,10 +35,10 @@ public class SecurityUtils {
         return hasRole("ROLE_ADMIN");
     }
 
-    public static void checkTaskOwnershipOrAdmin(Long taskUserId) {
+    public static void checkOwnershipOrAdmin(Long userId) {
         User currentUser = getCurrentUser();
 
-        boolean isOwner = currentUser.getId().equals(taskUserId);
+        boolean isOwner = currentUser.getId().equals(userId);
         boolean isAdmin = hasRole("ROLE_ADMIN");
 
         if (!isOwner && !isAdmin) {
