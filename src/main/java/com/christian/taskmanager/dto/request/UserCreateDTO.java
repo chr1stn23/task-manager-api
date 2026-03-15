@@ -17,6 +17,6 @@ public record UserCreateDTO(
 
         @NotEmpty List<Role> roles,
 
-        boolean enabled
+        Boolean enabled
 ) {
 }

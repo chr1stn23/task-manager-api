@@ -96,6 +96,33 @@ public class UserServiceTest {
         }
 
         @Test
+        @DisplayName("Should create a user enabled by default when field is null")
+        void shouldCreateUserEnabledByDefault() {
+            // Arrange
+            UserCreateDTO request = new UserCreateDTO("test user", "user@test.com", "password",
+                    List.of(Role.ROLE_USER), null);
+
+            when(userRepository.existsByEmail(anyString())).thenReturn(false);
+            when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // Act
+            UserResponseDTO response = userService.create(request);
+
+            // Assert
+            assertNotNull(response);
+            assertEquals("test user", response.name());
+            assertEquals("user@test.com", response.email());
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+
+            User savedUser = captor.getValue();
+            assertEquals("test user", savedUser.getName());
+            assertTrue(savedUser.isEnabled());
+        }
+
+        @Test
         @DisplayName("Should throw exception when email already exists")
         void shouldThrowExceptionWhenEmailExists() {
             // Arrange

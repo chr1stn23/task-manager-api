@@ -346,6 +346,9 @@ public class TaskControllerTest {
         @Test
         @DisplayName("Should delete task successfully")
         void shouldDeleteTaskSuccessfully() throws Exception {
+            // Arrange
+            doNothing().when(taskService).deleteTask(1L);
+
             // Act/Assert
             mockMvc.perform(patch("/api/tasks/1/delete"))
                     .andExpect(status().isOk())
@@ -383,6 +386,9 @@ public class TaskControllerTest {
         @Test
         @DisplayName("Should restore task successfully")
         void shouldRestoreTaskSuccessfully() throws Exception {
+            // Arrange
+            doNothing().when(taskService).restoreTask(1L);
+
             // Act/Assert
             mockMvc.perform(patch("/api/tasks/1/restore"))
                     .andExpect(status().isOk())

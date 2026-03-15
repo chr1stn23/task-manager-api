@@ -196,7 +196,7 @@ public class SecurityUtilTest {
         }
 
         @Test
-        @DisplayName("Should NOT throw exception when is not owner but is ADMIN")
+        @DisplayName("Should not throw exception when is not owner but is ADMIN")
         void shouldNotThrowException_WhenIsAdmin() {
             // Arrange
             User currentUser = new User();

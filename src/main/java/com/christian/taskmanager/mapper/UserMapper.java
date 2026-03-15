@@ -9,12 +9,16 @@ import com.christian.taskmanager.entity.User;
 public class UserMapper {
 
     public static User toEntity(UserCreateDTO dto) {
-        return User.builder()
+        var builder = User.builder()
                 .name(dto.name())
                 .email(dto.email())
-                .roles(dto.roles())
-                .enabled(dto.enabled())
-                .build();
+                .roles(dto.roles());
+
+        if (dto.enabled() != null) {
+            builder.enabled(dto.enabled());
+        }
+
+        return builder.build();
     }
 
     public static UserResponseDTO toDTO(User user) {

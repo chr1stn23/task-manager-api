@@ -125,7 +125,7 @@ public class AdminController {
             @ApiResponse(responseCode = "200", description = "Tasks retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping
+    @GetMapping("/tasks")
     public ApiResponseWrapper<Page<TaskResponseDTO>> getTasks(
             @Parameter(description = "Filter by deleted status")
             @RequestParam(required = false) Boolean deleted,
