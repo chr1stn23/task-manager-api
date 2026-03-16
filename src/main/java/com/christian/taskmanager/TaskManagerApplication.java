@@ -10,10 +10,10 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 @SpringBootApplication
 @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
 @EnableScheduling
-public class TaskmanagerApplication {
+public class TaskManagerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(TaskmanagerApplication.class, args);
+		SpringApplication.run(TaskManagerApplication.class, args);
 	}
 
 }
