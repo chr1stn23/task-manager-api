@@ -134,7 +134,7 @@ public class UserControllerTest {
         void shouldUpdateCurrentUserSuccessfully() throws Exception {
             // Arrange
             Long userId = 1L;
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", "new@mail.com", "password");
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", "new@mail.com", "pA$$w0rd");
             UserResponseDTO response = new UserResponseDTO(
                     userId, "New Name", "new@mail.com", List.of(Role.ROLE_USER.toString()), true);
             when(userService.updateBySelf(request)).thenReturn(response);

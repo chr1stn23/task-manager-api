@@ -49,16 +49,17 @@ Controller → Service → Repository → Database
 ## Project Structure
 
 - src/main/java/com/christian/taskmanager
-  - config 
-  - security 
-  - controller 
-  - service 
-  - repository 
-  - entity 
-  - dto 
-  - mapper 
-  - exception 
-  - common
+    - config
+    - controller
+    - dto
+    - entity
+    - exception
+    - mapper
+    - repository
+    - scheduler
+    - security
+    - service
+    - util
 
 ---
 
@@ -71,6 +72,7 @@ The API uses JWT tokens for authentication.
 POST /api/auth/login
 
 Response example:
+
 ```
 {
   "success": true,
@@ -79,6 +81,7 @@ Response example:
   }
 }
 ```
+
 Use the token in requests:
 
 Authorization: Bearer JWT_TOKEN
@@ -93,19 +96,56 @@ http://localhost:8080/swagger-ui/index.html
 
 ---
 
+## Environment Variables & Docker
+
+The project uses environment variables for sensitive configuration, such as JWT secrets and admin credentials. Create an
+.env file in the project root with the following variables:
+
+```
+# JWT secret key
+JWT_SECRET=your_jwt_secret
+
+# Admin user credentials
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=secure_password
+```
+
+---
+
+## Running with Docker Compose
+
+You can start the database and backend using Docker Compose:
+
+```
+docker-compose up --build
+```
+
+This will:
+
+- Launch a PostgreSQL database with persistent storage.
+- Build and run the Spring Boot backend.
+- Automatically configure environment variables from your .env.
+
+> Note: If you use Docker Compose, you don't need to run mvn spring-boot:run.
+---
+
 ## Running the Project
 
 ### 1. Clone the repository
 
+```
 git clone https://github.com/chr1stn23/task-manager-api.git
+```
 
 ### 2. Navigate to the project
 
+```
 cd task-manager-api
+```
 
 ### 3. Run the application
 
-mvn spring-boot:run
+``mvn spring-boot:run``
 
 ---
 
@@ -126,6 +166,7 @@ mvn spring-boot:run
 ## Error Handling
 
 All responses follow a consistent format:
+
 ```
 {
   "success": false,
@@ -136,6 +177,7 @@ All responses follow a consistent format:
   }
 }
 ```
+
 ---
 
 ## Author

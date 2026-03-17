@@ -97,7 +97,7 @@ public class AdminControllerTest {
         void shouldCreateUserSuccessfully() throws Exception {
             // Arrange
             UserCreateDTO request = new UserCreateDTO(
-                    "User", "user@test.com", "password", List.of(Role.ROLE_USER),
+                    "User", "user@test.com", "pA$$w0rd", List.of(Role.ROLE_USER),
                     true);
 
             UserResponseDTO response = new UserResponseDTO(

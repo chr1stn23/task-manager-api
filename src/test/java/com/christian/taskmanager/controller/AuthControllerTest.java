@@ -56,7 +56,7 @@ class AuthControllerTest {
     }
 
     private RegisterRequestDTO registerRequest() {
-        return new RegisterRequestDTO("User", "user@test.com", "password");
+        return new RegisterRequestDTO("User", "user@test.com", "pA$$w0rd");
     }
 
     private AuthRequestDTO loginRequest() {
