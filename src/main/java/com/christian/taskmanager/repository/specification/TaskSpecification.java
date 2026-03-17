@@ -9,6 +9,9 @@ import java.util.Objects;
 
 public class TaskSpecification {
 
+    private TaskSpecification() {
+    }
+
     public static Specification<Task> hasStatus(TaskStatus status) {
         return (root, query, cb) ->
                 status == null ? null : cb.equal(root.get("status"), status);

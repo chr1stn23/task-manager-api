@@ -43,6 +43,7 @@ public class User extends BaseEntity implements UserDetails {
     private boolean enabled = true;
 
     @Override
+    @NonNull
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority(role.name()))
@@ -50,6 +51,7 @@ public class User extends BaseEntity implements UserDetails {
     }
 
     @Override
+    @NonNull
     public String getUsername() {
         return email;
     }

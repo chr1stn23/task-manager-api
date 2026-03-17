@@ -9,6 +9,9 @@ import java.util.Objects;
 
 public class SecurityUtils {
 
+    private SecurityUtils() {
+    }
+
     public static User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

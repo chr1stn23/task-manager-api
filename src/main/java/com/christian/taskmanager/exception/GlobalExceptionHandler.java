@@ -88,13 +88,6 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(message, "INVALID_PARAMETER"));
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponseWrapper<Void>> handleIllegalState(BadRequestException ex) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ResponseUtils.error(ex.getMessage(), "BAD_REQUEST"));
-    }
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleGeneric(Exception ex) {
         return ResponseEntity

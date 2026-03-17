@@ -6,6 +6,9 @@ import com.christian.taskmanager.entity.Task;
 
 public class TaskMapper {
 
+    private TaskMapper() {
+    }
+
     public static Task toEntity(TaskRequestDTO dto) {
         return Task.builder()
                 .title(dto.title())

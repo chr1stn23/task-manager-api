@@ -1,6 +1,7 @@
 package com.christian.taskmanager.repository;
 
 import com.christian.taskmanager.entity.RefreshToken;
+import lombok.NonNull;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,6 +17,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     Optional<RefreshToken> findByToken(String token);
 
     @EntityGraph(attributePaths = {"user"})
+    @NonNull
     Optional<RefreshToken> findById(Long id);
 
     @Modifying

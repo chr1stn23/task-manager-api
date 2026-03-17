@@ -8,6 +8,9 @@ import com.christian.taskmanager.entity.User;
 
 public class UserMapper {
 
+    private UserMapper() {
+    }
+
     public static User toEntity(UserCreateDTO dto) {
         var builder = User.builder()
                 .name(dto.name())

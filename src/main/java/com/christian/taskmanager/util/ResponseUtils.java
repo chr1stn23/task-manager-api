@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 
 public class ResponseUtils {
 
+    private ResponseUtils() {
+    }
+
     public static <T> ApiResponseWrapper<T> success(T data) {
         return ApiResponseWrapper.<T>builder()
                 .success(true)

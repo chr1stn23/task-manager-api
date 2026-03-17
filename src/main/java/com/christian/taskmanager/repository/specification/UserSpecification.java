@@ -5,6 +5,9 @@ import org.springframework.data.jpa.domain.Specification;
 
 public class UserSpecification {
 
+    private UserSpecification() {
+    }
+
     public static Specification<User> isEnabled(Boolean enabled) {
         return (root, query, cb) ->
                 enabled == null ? null : cb.equal(root.get("enabled"), enabled);
