@@ -121,7 +121,7 @@ class GlobalExceptionHandlerTest {
         // Arrange
         MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);
-        FieldError fieldError = new FieldError("object", "email", "must not be blank");
+        FieldError fieldError = new FieldError("object", "email", "email must not be blank");
 
         when(ex.getBindingResult()).thenReturn(bindingResult);
         when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));

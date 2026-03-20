@@ -2,6 +2,7 @@ package com.christian.taskmanager.exception;
 
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.util.ResponseUtils;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -63,7 +64,7 @@ public class GlobalExceptionHandler {
                 .getFieldErrors()
                 .stream()
                 .findFirst()
-                .map(error -> error.getField() + " " + error.getDefaultMessage())
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .orElse("Validation error");
 
         return ResponseEntity

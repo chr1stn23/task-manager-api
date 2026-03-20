@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.christian</groupId>
-    <artifactId>taskmanager</artifactId>
+    <artifactId>task-manager-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>taskmanager</name>
+    <name>task-manager-api</name>
     <description>Task Manager</description>
     <url/>
     <licenses>
