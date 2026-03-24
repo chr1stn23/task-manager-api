@@ -87,12 +87,12 @@ public class RefreshTokenServiceTest {
     @DisplayName("Should throw exception when verifying a revoked token")
     void shouldThrowExceptionWhenTokenRevoked() {
         // Arrange
-        RefreshToken token = RefreshToken.builder().revoked(true).build();
+        RefreshToken token = RefreshToken.builder().token("revoked_token").revoked(true).build();
 
         // Act/Assert
         assertThatThrownBy(() -> refreshTokenService.verifyExpiration(token))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Refresh token revoked");
+                .hasMessage("The token [revoked_token] is revoked or invalid.");
     }
 
     @Test
@@ -101,13 +101,14 @@ public class RefreshTokenServiceTest {
         // Arrange
         RefreshToken token = RefreshToken.builder()
                 .revoked(false)
+                .token("refresh_token")
                 .expiryDate(Instant.now().minusSeconds(60)) // Expired 1 minute ago
                 .build();
 
         // Act/Assert
         assertThatThrownBy(() -> refreshTokenService.verifyExpiration(token))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("Refresh token expired");
+                .hasMessage("The token [refresh_token] is expired.");
         verify(refreshTokenRepository).delete(token);
     }
 

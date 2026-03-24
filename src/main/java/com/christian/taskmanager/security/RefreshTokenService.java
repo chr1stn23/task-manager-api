@@ -3,6 +3,8 @@ package com.christian.taskmanager.security;
 import com.christian.taskmanager.entity.RefreshToken;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.NotFoundException;
+import com.christian.taskmanager.exception.RefreshTokenException.RefreshTokenExpiredException;
+import com.christian.taskmanager.exception.RefreshTokenException.RefreshTokenRevokedException;
 import com.christian.taskmanager.repository.RefreshTokenRepository;
 import com.christian.taskmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,12 +42,12 @@ public class RefreshTokenService {
 
     public void verifyExpiration(RefreshToken token) {
         if (token.isRevoked()) {
-            throw new RuntimeException("Refresh token revoked");
+            throw new RefreshTokenRevokedException(token.getToken());
         }
 
         if (token.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
-            throw new RuntimeException("Refresh token expired");
+            throw new RefreshTokenExpiredException(token.getToken());
         }
     }
 

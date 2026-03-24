@@ -206,5 +206,39 @@ class GlobalExceptionHandlerTest {
         assertEquals("INTERNAL_ERROR", response.getBody().getError().getCode());
     }
 
+    @Test
+    @DisplayName("Should return 401 when RefreshTokenExpiredException is thrown")
+    void shouldHandleRefreshTokenExpiredException() {
+        // Arrange
+        RefreshTokenException ex =
+                new RefreshTokenException.RefreshTokenExpiredException("abc123");
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleRefreshTokenException(ex);
+
+        // Assert
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("REFRESH_TOKEN_EXPIRED", response.getBody().getError().getCode());
+        assertTrue(response.getBody().getError().getMessage().contains("abc123"));
+    }
+
+    @Test
+    @DisplayName("Should return 401 when RefreshTokenRevokedException is thrown")
+    void shouldHandleRefreshTokenRevokedException() {
+        // Arrange
+        RefreshTokenException ex =
+                new RefreshTokenException.RefreshTokenRevokedException("abc123");
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleRefreshTokenException(ex);
+
+        // Assert
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("REFRESH_TOKEN_REVOKED", response.getBody().getError().getCode());
+        assertTrue(response.getBody().getError().getMessage().contains("abc123"));
+    }
+
     enum TestEnum {ACTIVE, INACTIVE}
 }

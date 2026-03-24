@@ -89,6 +89,13 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(message, "INVALID_PARAMETER"));
     }
 
+    @ExceptionHandler(RefreshTokenException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleRefreshTokenException(RefreshTokenException ex) {
+       return ResponseEntity
+               .status(HttpStatus.UNAUTHORIZED)
+               .body(ResponseUtils.error(ex.getMessage(), ex.getErrorCode()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleGeneric(Exception ex) {
         return ResponseEntity
