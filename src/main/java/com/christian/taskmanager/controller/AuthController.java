@@ -100,7 +100,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Strict")
-                .path("/api/auth")
+                .path("/")
                 .maxAge(Duration.ofDays(7))
                 .build();
 
