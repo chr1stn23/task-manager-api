@@ -8,6 +8,7 @@ import com.christian.taskmanager.exception.RefreshTokenException.RefreshTokenRev
 import com.christian.taskmanager.repository.RefreshTokenRepository;
 import com.christian.taskmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -21,7 +22,8 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
-    private final Duration refreshTokenDuration = Duration.ofDays(7);
+    @Value("${refresh-token.expiration-days}")
+    private long refreshTokenExpirationDays;
 
     public RefreshToken createRefreshToken(Long userId, String userAgent, String ipAddress) {
         User user = userRepository.findById(userId)
@@ -30,7 +32,7 @@ public class RefreshTokenService {
         RefreshToken token = RefreshToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())
-                .expiryDate(Instant.now().plus(refreshTokenDuration))
+                .expiryDate(Instant.now().plus(Duration.ofDays(refreshTokenExpirationDays)))
                 .revoked(false)
                 .userAgent(userAgent)
                 .ipAddress(ipAddress)

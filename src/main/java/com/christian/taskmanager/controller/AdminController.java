@@ -1,5 +1,6 @@
 package com.christian.taskmanager.controller;
 
+import com.christian.taskmanager.dto.request.ResetPasswordByAdminDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.response.*;
@@ -90,6 +91,21 @@ public class AdminController {
     public ApiResponseWrapper<UserResponseDTO> updateUserById(@PathVariable Long id,
             @RequestBody @Valid UserUpdateByAdminDTO request) {
         return ResponseUtils.success(userService.updateByAdmin(id, request));
+    }
+
+    @Operation(summary = "Reset user password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User password has been reset successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @PatchMapping("/users/{id}/reset-password")
+    public ApiResponseWrapper<String> resetUserPassword(
+            @PathVariable Long id,
+            @RequestBody @Valid ResetPasswordByAdminDTO request) {
+
+        userService.resetPasswordByAdmin(id, request.newPassword());
+        return ResponseUtils.success("User password has been reset by administrator");
     }
 
     @Operation(summary = "Disable user by id")

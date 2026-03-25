@@ -1,5 +1,6 @@
 package com.christian.taskmanager.controller;
 
+import com.christian.taskmanager.dto.request.ResetPasswordByAdminDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
@@ -303,6 +304,69 @@ public class AdminControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("resetUserPassword")
+    class ResetUserPasswordTests {
+
+        @Test
+        @DisplayName("Should reset user password successfully")
+        void shouldResetUserPasswordSuccessfully() throws Exception {
+            // Arrange
+            Long userId = 1L;
+            var request = new ResetPasswordByAdminDTO("newPassword!23");
+
+            doNothing().when(userService).resetPasswordByAdmin(userId, "newPassword!23");
+
+            // Act / Assert
+            mockMvc.perform(patch("/api/admin/users/{id}/reset-password", userId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data")
+                            .value("User password has been reset by administrator"));
+
+            verify(userService).resetPasswordByAdmin(userId, "newPassword!23");
+        }
+
+        @Test
+        @DisplayName("Should return 404 when user does not exist")
+        void shouldReturn404WhenUserNotFound() throws Exception {
+            // Arrange
+            Long userId = 99L;
+            var request = new ResetPasswordByAdminDTO("newPassword!23");
+
+            doThrow(new NotFoundException("User not found"))
+                    .when(userService).resetPasswordByAdmin(userId, "newPassword!23");
+
+            // Act / Assert
+            mockMvc.perform(patch("/api/admin/users/{id}/reset-password", userId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
+        }
+
+        @Test
+        @DisplayName("Should return 400 when request is invalid")
+        void shouldReturn400WhenRequestInvalid() throws Exception {
+            // Arrange
+            Long userId = 1L;
+            var request = new ResetPasswordByAdminDTO("");
+
+            // Act / Assert
+            mockMvc.perform(patch("/api/admin/users/{id}/reset-password", userId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+            verifyNoInteractions(userService);
         }
     }
 

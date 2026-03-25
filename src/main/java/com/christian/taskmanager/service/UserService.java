@@ -1,5 +1,6 @@
 package com.christian.taskmanager.service;
 
+import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
@@ -23,4 +24,8 @@ public interface UserService {
     void disableUser(Long id);
 
     void enableUser(Long id);
+
+    void changePassword(PasswordChangeRequestDTO request);
+
+    void resetPasswordByAdmin(Long id, String newPassword);
 }

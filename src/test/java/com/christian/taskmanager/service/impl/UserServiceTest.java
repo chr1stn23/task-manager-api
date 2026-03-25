@@ -1,5 +1,6 @@
 package com.christian.taskmanager.service.impl;
 
+import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
@@ -8,6 +9,7 @@ import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.EmailAlreadyExistsException;
+import com.christian.taskmanager.exception.InvalidCredentialsException;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.CurrentUserService;
@@ -440,7 +442,7 @@ public class UserServiceTest {
 
             // Act / Assert
             assertThatThrownBy(() -> userService.updateByAdmin(targetId, request))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(EmailAlreadyExistsException.class)
                     .hasMessage("Email already registered");
 
             verify(userRepository, never()).save(any());
@@ -515,68 +517,13 @@ public class UserServiceTest {
     @DisplayName("updateBySelf")
     class UpdateBySelf {
         @Test
-        @DisplayName("Should update name and email without changing password when password is null")
-        void shouldUpdateUserWithoutChangingPassword() {
-            // Arrange
-            Long userId = 1L;
-            User user = createUser(userId, "Old Name", "old@mail.com", List.of(Role.ROLE_USER));
-            user.setPassword("oldPassword");
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", "new@mail.com", null);
-
-            when(currentUserService.getCurrentUserId()).thenReturn(userId);
-            when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
-            when(userRepository.save(any(User.class))).thenReturn(user);
-            when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
-
-            // Act
-            UserResponseDTO result = userService.updateBySelf(request);
-
-            // Assert
-            assertNotNull(result);
-
-            assertEquals("New Name", user.getName());
-            assertEquals("new@mail.com", user.getEmail());
-            assertEquals("oldPassword", user.getPassword());
-
-            verify(passwordEncoder, never()).encode(any());
-            verify(userRepository).save(user);
-        }
-
-        @Test
-        @DisplayName("Should update user and encode password when password is provided")
-        void shouldUpdateUserAndEncodePassword() {
-            // Arrange
-            Long userId = 1L;
-            User user = createUser(userId, "Old Name", "old@mail.com", List.of(Role.ROLE_USER));
-            user.setPassword("oldPassword");
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", "new@mail.com", "newPassword");
-
-            when(currentUserService.getCurrentUserId()).thenReturn(userId);
-            when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
-            when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
-            when(passwordEncoder.encode("newPassword")).thenReturn("encodedPassword");
-            when(userRepository.save(any(User.class))).thenReturn(user);
-
-            // Act
-            UserResponseDTO result = userService.updateBySelf(request);
-
-            // Assert
-            assertNotNull(result);
-            assertEquals("New Name", user.getName());
-            assertEquals("new@mail.com", user.getEmail());
-            assertEquals("encodedPassword", user.getPassword());
-            verify(passwordEncoder).encode("newPassword");
-            verify(userRepository).save(user);
-        }
-
-        @Test
         @DisplayName("Should update name and keep same email without checking database")
         void shouldUpdateUserWhenEmailIsSame() {
             // Arrange
             Long userId = 1L;
             String sameEmail = "same@mail.com";
             User user = createUser(userId, "Old Name", sameEmail, List.of(Role.ROLE_USER));
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", sameEmail, null);
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", sameEmail);
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
@@ -593,24 +540,26 @@ public class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should not update password when password is an empty string")
-        void shouldNotUpdatePasswordWhenBlank() {
+        @DisplayName("Should update when email is different but does not exist in database")
+        void shouldUpdateWhenEmailIsDifferentAndNotExists() {
             // Arrange
             Long userId = 1L;
-            User user = createUser(userId, "Name", "mail@mail.com", List.of(Role.ROLE_USER));
-            user.setPassword("oldPassword");
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", "mail@mail.com", "");
+            User user = createUser(userId, "Name", "old@mail.com", List.of(Role.ROLE_USER));
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", "new@mail.com");
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
+            when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
             when(userRepository.save(any(User.class))).thenReturn(user);
 
             // Act
             userService.updateBySelf(request);
 
             // Assert
-            assertEquals("oldPassword", user.getPassword());
-            verify(passwordEncoder, never()).encode(any());
+            assertEquals("New Name", user.getName());
+            assertEquals("new@mail.com", user.getEmail());
+
+            verify(userRepository).existsByEmail("new@mail.com");
             verify(userRepository).save(user);
         }
 
@@ -619,7 +568,7 @@ public class UserServiceTest {
         void shouldThrowNotFoundExceptionWhenUserNotFound() {
             // Arrange
             Long userId = 1L;
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", "mail@test.com", "password");
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", "mail@test.com");
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.empty());
@@ -638,7 +587,7 @@ public class UserServiceTest {
             // Arrange
             Long userId = 1L;
             User user = createUser(userId, "Name", "old@mail.com", List.of(Role.ROLE_USER));
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", "existing@mail.com", null);
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", "existing@mail.com");
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
@@ -646,7 +595,7 @@ public class UserServiceTest {
 
             // Act / Assert
             assertThatThrownBy(() -> userService.updateBySelf(request))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(EmailAlreadyExistsException.class)
                     .hasMessage("Email already registered");
 
             verify(userRepository, never()).save(any());
@@ -805,6 +754,98 @@ public class UserServiceTest {
             assertThatThrownBy(() -> userService.enableUser(userId))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessage("User not found");
+            verify(userRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("changePassword")
+    class ChangePassword {
+
+        @Test
+        @DisplayName("Should change password successfully")
+        void shouldChangePasswordSuccessfully() {
+            // Arrange
+            User user = createUser(1L, "Name", "mail@test.com", List.of(Role.ROLE_USER));
+            user.setPassword("encodedOldPassword");
+
+            PasswordChangeRequestDTO request =
+                    new PasswordChangeRequestDTO("oldPassword", "newPassword");
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            when(passwordEncoder.matches("oldPassword", "encodedOldPassword")).thenReturn(true);
+            when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
+
+            // Act
+            userService.changePassword(request);
+
+            // Assert
+            assertEquals("encodedNewPassword", user.getPassword());
+            verify(passwordEncoder).matches("oldPassword", "encodedOldPassword");
+            verify(passwordEncoder).encode("newPassword");
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("Should throw exception when old password is incorrect")
+        void shouldThrowWhenOldPasswordIsIncorrect() {
+            // Arrange
+            User user = createUser(1L, "Name", "mail@test.com", List.of(Role.ROLE_USER));
+            user.setPassword("encodedOldPassword");
+
+            PasswordChangeRequestDTO request =
+                    new PasswordChangeRequestDTO("wrongPassword", "newPassword");
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            when(passwordEncoder.matches("wrongPassword", "encodedOldPassword")).thenReturn(false);
+
+            // Act/Assert
+            assertThatThrownBy(() -> userService.changePassword(request))
+                    .isInstanceOf(InvalidCredentialsException.class)
+                    .hasMessage("Invalid password");
+
+            verify(passwordEncoder, never()).encode(any());
+            verify(userRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("resetPasswordByAdmin")
+    class ResetPasswordByAdmin {
+
+        @Test
+        @DisplayName("Should reset password successfully")
+        void shouldResetPasswordSuccessfully() {
+            // Arrange
+            Long userId = 1L;
+            User user = createUser(userId, "Name", "mail@test.com", List.of(Role.ROLE_USER));
+
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(passwordEncoder.encode("newPassword")).thenReturn("encodedPassword");
+
+            // Act
+            userService.resetPasswordByAdmin(userId, "newPassword");
+
+            // Assert
+            assertEquals("encodedPassword", user.getPassword());
+            verify(passwordEncoder).encode("newPassword");
+            verify(userRepository).save(user);
+        }
+
+        @Test
+        @DisplayName("Should throw NotFoundException when user does not exist")
+        void shouldThrowWhenUserNotFound() {
+            // Arrange
+            Long userId = 1L;
+
+            when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+            // Act/Assert
+            assertThatThrownBy(() -> userService.resetPasswordByAdmin(userId, "newPassword"))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessage("User not found");
+
+            verify(passwordEncoder, never()).encode(any());
             verify(userRepository, never()).save(any());
         }
     }

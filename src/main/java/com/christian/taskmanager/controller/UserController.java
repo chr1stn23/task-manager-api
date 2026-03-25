@@ -1,5 +1,6 @@
 package com.christian.taskmanager.controller;
 
+import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
@@ -44,6 +45,18 @@ public class UserController {
     @PatchMapping("/me")
     public ApiResponseWrapper<UserResponseDTO> updateCurrentUser(@RequestBody @Valid UserUpdateBySelfDTO request) {
         return ResponseUtils.success(userService.updateBySelf(request));
+    }
+
+    @Operation(summary = "Change current user password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid current password or request data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @PostMapping("/me/change-password")
+    public ApiResponseWrapper<String> changePassword(@RequestBody @Valid PasswordChangeRequestDTO request) {
+        userService.changePassword(request);
+        return ResponseUtils.success("Password updated successfully");
     }
 
     @Operation(summary = "Disable current user profile")

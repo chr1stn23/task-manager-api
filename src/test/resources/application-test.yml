@@ -9,6 +9,10 @@ spring:
 
 jwt:
   secret: "7960f5cf675c9e39071c0beabba68fca2a6de80612b314db300e2f6f832ce631"
+  expiration-ms: 900000
+
+refresh-token:
+  expiration-days: 7
 
 admin:
   email: "admin@test.com"

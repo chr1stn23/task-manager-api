@@ -1,5 +1,6 @@
 package com.christian.taskmanager.service.impl;
 
+import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
@@ -8,6 +9,7 @@ import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.EmailAlreadyExistsException;
+import com.christian.taskmanager.exception.InvalidCredentialsException;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.mapper.UserMapper;
 import com.christian.taskmanager.repository.UserRepository;
@@ -88,7 +90,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
-            throw new IllegalStateException("Email already registered");
+            throw new EmailAlreadyExistsException("Email already registered");
         }
 
         user.setName(request.name());
@@ -114,15 +116,11 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
-            throw new IllegalStateException("Email already registered");
+            throw new EmailAlreadyExistsException("Email already registered");
         }
 
         user.setName(request.name());
         user.setEmail(request.email());
-
-        if (request.password() != null && !request.password().isBlank()) {
-            user.setPassword(passwordEncoder.encode(request.password()));
-        }
 
         return UserMapper.toDTO(userRepository.save(user));
     }
@@ -161,6 +159,29 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setEnabled(true);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(PasswordChangeRequestDTO request) {
+        User user = currentUserService.getCurrentUser();
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Invalid password");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    public void resetPasswordByAdmin(Long id, String newPassword) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedPassword);
         userRepository.save(user);
     }
 }
