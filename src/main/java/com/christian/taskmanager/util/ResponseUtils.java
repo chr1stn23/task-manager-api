@@ -3,7 +3,7 @@ package com.christian.taskmanager.util;
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.dto.response.ErrorResponse;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class ResponseUtils {
 
@@ -13,7 +13,7 @@ public class ResponseUtils {
     public static <T> ApiResponseWrapper<T> success(T data) {
         return ApiResponseWrapper.<T>builder()
                 .success(true)
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .data(data)
                 .build();
     }
@@ -21,7 +21,7 @@ public class ResponseUtils {
     public static ApiResponseWrapper<Void> error(String message, String code) {
         return ApiResponseWrapper.<Void>builder()
                 .success(false)
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .error(
                         ErrorResponse.builder()
                                 .message(message)

@@ -1,13 +1,13 @@
 package com.christian.taskmanager.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record SessionResponseDTO(
         Long id,
         String deviceName,
         String ipAddress,
         String agentName,
-        LocalDateTime createdAt,
+        Instant createdAt,
         boolean current
 ) {
 }

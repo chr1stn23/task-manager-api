@@ -17,7 +17,8 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.mockito.Mockito.verify;
@@ -56,7 +57,7 @@ public class SessionControllerTest {
             Long userId = 1L;
             SessionResponseDTO response = new SessionResponseDTO(
                     2L, "Windows PC", "127.0.0.1", "Windows",
-                    LocalDateTime.now().minusDays(1), true);
+                    Instant.now().minus(1, ChronoUnit.DAYS), true);
             Cookie refreshCookie = new Cookie("refreshToken", "refresh token");
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(sessionService.getSessions(userId, "refresh token")).thenReturn(List.of(response));

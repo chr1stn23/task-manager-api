@@ -15,7 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,7 +47,9 @@ public class SessionServiceTest {
             User user = User.builder().id(userId).build();
             String ipAddress1 = "200.48.11.50";
             String ipAddress2 = "200.48.11.15";
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
+            Instant created1 = now.minus(2, ChronoUnit.DAYS);
+            Instant created2 = now.minus(30, ChronoUnit.MINUTES);
 
             List<RefreshToken> refreshTokens = List.of(
                     RefreshToken.builder()
@@ -57,7 +59,7 @@ public class SessionServiceTest {
                             .deviceName("Windows PC")
                             .userAgent("Windows")
                             .ipAddress(ipAddress1)
-                            .createdAt(now.minusDays(2))
+                            .createdAt(created1)
                             .build(),
                     RefreshToken.builder()
                             .id(11L)
@@ -66,7 +68,7 @@ public class SessionServiceTest {
                             .deviceName("Android Device")
                             .userAgent("Android")
                             .ipAddress(ipAddress2)
-                            .createdAt(now.minusMinutes(30))
+                            .createdAt(created2)
                             .build()
             );
 
@@ -84,11 +86,13 @@ public class SessionServiceTest {
             assertEquals("Windows PC", session1.deviceName());
             assertEquals(ipAddress1, session1.ipAddress());
             assertEquals("Windows", session1.agentName());
-            assertEquals(now.minusDays(2), session1.createdAt());
+
+            assertEquals(created1, session1.createdAt());
             assertTrue(session1.current());
 
             SessionResponseDTO session2 = sessions.get(1);
             assertEquals("Android Device", session2.deviceName());
+            assertEquals(created2, session2.createdAt());
             assertFalse(session2.current());
 
             verify(refreshTokenRepository, times(1)).findActiveSessionsByUserId(eq(userId), any(Instant.class));
