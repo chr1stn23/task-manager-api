@@ -40,10 +40,11 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TaskResponseDTO> getTasks(Boolean deleted, TaskStatus status, Priority priority, Long userId,
+    public Page<TaskResponseDTO> getTasks(Boolean deleted, String searchTerm, TaskStatus status, Priority priority, Long userId,
             Pageable pageable) {
         Specification<Task> spec = Specification
                 .where(TaskSpecification.isDeleted(deleted))
+                .and(TaskSpecification.hasSearchTerm(searchTerm))
                 .and(TaskSpecification.hasStatus(status))
                 .and(TaskSpecification.hasPriority(priority))
                 .and(TaskSpecification.belongsToUserId(userId));

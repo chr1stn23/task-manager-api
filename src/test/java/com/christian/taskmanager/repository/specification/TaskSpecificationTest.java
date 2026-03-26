@@ -112,4 +112,34 @@ class TaskSpecificationTest {
         assertThat(spec.toPredicate(root, query, cb)).isNotNull();
         verify(cb).equal(path, true);
     }
+
+    @Test
+    @DisplayName("Should return null when search term is blank")
+    void shouldReturnNullWhenSearchTermIsBlank() {
+        Specification<Task> spec = TaskSpecification.hasSearchTerm("   ");
+        assertThat(spec.toPredicate(root, query, cb)).isNull();
+    }
+
+    @Test
+    @DisplayName("Should return null when search term is null")
+    void shouldReturnNullWhenSearchTermIsNull() {
+        Specification<Task> spec = TaskSpecification.hasSearchTerm(null);
+        assertThat(spec.toPredicate(root, query, cb)).isNull();
+    }
+
+    @Test
+    @DisplayName("Should return OR predicate for title and description when search term is provided")
+    void shouldReturnOrPredicateWhenSearchTermIsProvided() {
+        String searchTerm = "search";
+        String pattern = "%search%";
+
+        Specification<Task> spec = TaskSpecification.hasSearchTerm(searchTerm);
+        spec.toPredicate(root, query, cb);
+
+        verify(root).get("title");
+        verify(root).get("description");
+
+        verify(cb, times(2)).like(any(), eq(pattern));
+        verify(cb).or(any(), any());
+    }
 }

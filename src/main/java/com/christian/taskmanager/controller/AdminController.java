@@ -59,7 +59,7 @@ public class AdminController {
     })
     @GetMapping("/users")
     public ApiResponseWrapper<Page<UserListResponseDTO>> getUsers(
-            @Parameter(description = "Filter by name")
+            @Parameter(description = "Filter by firstName, lastName, nickName")
             @RequestParam(required = false) String name,
             @Parameter(description = "Filter by email")
             @RequestParam(required = false) String email,
@@ -145,6 +145,8 @@ public class AdminController {
     public ApiResponseWrapper<Page<TaskResponseDTO>> getTasks(
             @Parameter(description = "Filter by deleted status")
             @RequestParam(required = false) Boolean deleted,
+            @Parameter(description = "Filter by task title or description")
+            @RequestParam(required = false) String search,
             @Parameter(description = "Filter by task status")
             @RequestParam(required = false) TaskStatus status,
             @Parameter(description = "Filter by task priority")
@@ -153,7 +155,7 @@ public class AdminController {
             @RequestParam(required = false) Long userId,
             @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseUtils.success(taskService.getTasks(deleted, status, priority, userId, pageable));
+        return ResponseUtils.success(taskService.getTasks(deleted, search, status, priority, userId, pageable));
     }
 
     // ===================================================

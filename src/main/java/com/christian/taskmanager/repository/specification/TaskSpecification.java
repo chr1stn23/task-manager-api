@@ -31,4 +31,17 @@ public class TaskSpecification {
         return (root, query, cb) ->
                 cb.equal(root.get("deleted"), Objects.requireNonNullElse(deleted, false));
     }
+
+    public static Specification<Task> hasSearchTerm(String searchTerm) {
+        return (root, query, cb) -> {
+            if (searchTerm == null || searchTerm.isBlank()) return null;
+
+            String pattern = "%" + searchTerm.toLowerCase() + "%";
+
+            var titleLike = cb.like(cb.lower(root.get("title")), pattern);
+            var descriptionLike = cb.like(cb.lower(root.get("description")), pattern);
+
+            return cb.or(titleLike, descriptionLike);
+        };
+    }
 }

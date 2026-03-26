@@ -498,7 +498,7 @@ public class AdminControllerTest {
                     1L, "Test Task", "Desc", TaskStatus.IN_PROGRESS, Priority.HIGH, null);
             Page<TaskResponseDTO> page = new PageImpl<>(List.of(task));
 
-            when(taskService.getTasks(eq(false), eq(TaskStatus.IN_PROGRESS), eq(Priority.HIGH), any(), any()))
+            when(taskService.getTasks(eq(false), isNull(), eq(TaskStatus.IN_PROGRESS), eq(Priority.HIGH), any(), any()))
                     .thenReturn(page);
 
             // Act/Assert
@@ -530,7 +530,7 @@ public class AdminControllerTest {
             // Arrange
             Page<TaskResponseDTO> emptyPage = new PageImpl<>(List.of());
             ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-            when(taskService.getTasks(any(), any(), any(), any(), pageableCaptor.capture()))
+            when(taskService.getTasks(any(), any(), any(), any(), any(), pageableCaptor.capture()))
                     .thenReturn(emptyPage);
 
             // Act

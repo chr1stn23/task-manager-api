@@ -50,6 +50,8 @@ public class TaskController {
     public ApiResponseWrapper<Page<TaskResponseDTO>> getTasks(
             @Parameter(description = "Filter by deleted status")
             @RequestParam(required = false) Boolean deleted,
+            @Parameter(description = "Filter by task title or description")
+            @RequestParam(required = false) String search,
             @Parameter(description = "Filter by task status")
             @RequestParam(required = false) TaskStatus status,
             @Parameter(description = "Filter by task priority")
@@ -57,7 +59,7 @@ public class TaskController {
             @PageableDefault(sort = "dueDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         Long currentUserId = currentUserService.getCurrentUserId();
-        return ResponseUtils.success(taskService.getTasks(deleted, status, priority, currentUserId, pageable));
+        return ResponseUtils.success(taskService.getTasks(deleted, search, status, priority, currentUserId, pageable));
     }
 
     @Operation(summary = "Get task by ID")

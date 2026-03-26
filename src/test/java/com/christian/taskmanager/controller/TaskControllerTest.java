@@ -134,7 +134,7 @@ public class TaskControllerTest {
 
             when(currentUserService.getCurrentUserId()).thenReturn(1L);
 
-            when(taskService.getTasks(null, null, null, 1L, expectedPageable))
+            when(taskService.getTasks(null, null, null, null, 1L, expectedPageable))
                     .thenReturn(page);
 
             // Act/Assert
@@ -143,7 +143,7 @@ public class TaskControllerTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.content[0].title").value("Task 1"));
 
-            verify(taskService).getTasks(null, null, null, 1L, expectedPageable);
+            verify(taskService).getTasks(null, null, null, null, 1L, expectedPageable);
         }
 
         @Test
@@ -153,7 +153,7 @@ public class TaskControllerTest {
             Page<TaskResponseDTO> page = new PageImpl<>(List.of());
 
             when(currentUserService.getCurrentUserId()).thenReturn(1L);
-            when(taskService.getTasks(true, TaskStatus.TODO, Priority.HIGH, 1L, expectedPageable))
+            when(taskService.getTasks(true, null, TaskStatus.TODO, Priority.HIGH, 1L, expectedPageable))
                     .thenReturn(page);
 
             // Act/Assert
@@ -162,7 +162,7 @@ public class TaskControllerTest {
                             .param("status", "TODO")
                             .param("priority", "HIGH"))
                     .andExpect(status().isOk());
-            verify(taskService).getTasks(true, TaskStatus.TODO, Priority.HIGH, 1L, expectedPageable);
+            verify(taskService).getTasks(true, null, TaskStatus.TODO, Priority.HIGH, 1L, expectedPageable);
         }
 
         @Test
@@ -170,7 +170,7 @@ public class TaskControllerTest {
         void shouldApplyPagination() throws Exception {
             // Arrange
             when(currentUserService.getCurrentUserId()).thenReturn(1L);
-            when(taskService.getTasks(any(), any(), any(), any(), any()))
+            when(taskService.getTasks(any(), any(), any(), any(), any(), any()))
                     .thenReturn(Page.empty());
 
             // Act/Assert
@@ -179,7 +179,7 @@ public class TaskControllerTest {
                             .param("size", "5"))
                     .andExpect(status().isOk());
             verify(taskService).getTasks(
-                    any(), any(), any(), eq(1L),
+                    any(), any(), any(), any(), eq(1L),
                     eq(PageRequest.of(1, 5, Sort.by("dueDate").descending()))
             );
         }
