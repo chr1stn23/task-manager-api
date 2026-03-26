@@ -7,6 +7,7 @@ import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.EmailAlreadyExistsException;
 import com.christian.taskmanager.exception.InvalidCredentialsException;
+import com.christian.taskmanager.exception.NickNameAlreadyExistsException;
 import com.christian.taskmanager.exception.UserDisabledException;
 import com.christian.taskmanager.repository.RefreshTokenRepository;
 import com.christian.taskmanager.repository.UserRepository;
@@ -54,10 +55,11 @@ public class AuthServiceTest {
     private AuthServiceImpl authService;
 
     // Helpers
-    private static User createUser(Long id, String name, String email, List<Role> roles) {
+    private static User createUser(Long id, String firstName, String email, List<Role> roles) {
         return User.builder()
                 .id(id)
-                .name(name)
+                .firstName(firstName)
+                .nickName(firstName)
                 .email(email)
                 .roles(roles)
                 .build();
@@ -70,11 +72,13 @@ public class AuthServiceTest {
         @DisplayName("Should register user and return token pair")
         void shouldRegisterUserAndReturnTokenPair() {
             // Arrange
-            RegisterRequestDTO request = new RegisterRequestDTO("test user", "user@test.com", "password");
+            RegisterRequestDTO request = new RegisterRequestDTO("test user", "Lastname", "nickname", "user@test.com",
+                    "password");
             String userAgent = "Windows";
             String ipAddress = "200.48.11.50";
 
             when(userRepository.existsByEmail("user@test.com")).thenReturn(false);
+            when(userRepository.existsByNickName("nickname")).thenReturn(false);
             when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
             when(userRepository.save(any(User.class))).thenAnswer(inv -> {
                 User user = inv.getArgument(0);
@@ -103,7 +107,8 @@ public class AuthServiceTest {
         @DisplayName("Should throw exception when email already exists")
         void shouldThrowExceptionWhenEmailAlreadyExists() {
             // Arrange
-            RegisterRequestDTO request = new RegisterRequestDTO("test user", "used@test.com", "password");
+            RegisterRequestDTO request = new RegisterRequestDTO("test user", "LastName", "nickname", "used@test.com",
+                    "password");
             String userAgent = "Windows";
             String ipAddress = "200.48.11.50";
 
@@ -113,6 +118,26 @@ public class AuthServiceTest {
             assertThatThrownBy(() -> authService.register(request, userAgent, ipAddress))
                     .isInstanceOf(EmailAlreadyExistsException.class)
                     .hasMessage("Email already registered");
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when nickname already exists")
+        void shouldThrowExceptionWhenNicknameAlreadyExists() {
+            // Arrange
+            RegisterRequestDTO request = new RegisterRequestDTO("test user", "LastName", "nickname", "used@test.com",
+                    "password");
+            String userAgent = "Windows";
+            String ipAddress = "200.48.11.50";
+
+            when(userRepository.existsByEmail("used@test.com")).thenReturn(false);
+            when(userRepository.existsByNickName("nickname")).thenReturn(true);
+
+
+            // Act/Assert
+            assertThatThrownBy(() -> authService.register(request, userAgent, ipAddress))
+                    .isInstanceOf(NickNameAlreadyExistsException.class)
+                    .hasMessage("Nickname already registered");
             verify(userRepository, never()).save(any(User.class));
         }
     }

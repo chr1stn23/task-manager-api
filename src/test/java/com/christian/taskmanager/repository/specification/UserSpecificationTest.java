@@ -89,11 +89,20 @@ class UserSpecificationTest {
     }
 
     @Test
-    @DisplayName("Should return predicate when name is not blank")
-    void shouldReturnPredicateWhenNameNotBlank() {
-        Specification<User> spec = UserSpecification.isNameLike("mariano");
-        assertThat(spec.toPredicate(root, query, cb)).isNotNull();
-        verify(cb).like(expression, "%mariano%");
+    @DisplayName("Should return OR predicate for firstName, lastName, and nickName when search term is provided")
+    void shouldReturnOrPredicateWhenSearchTermIsProvided() {
+        String searchTerm = "Mariano";
+        String pattern = "%mariano%";
+
+        Specification<User> spec = UserSpecification.isNameLike(searchTerm);
+        spec.toPredicate(root, query, cb);
+
+        verify(root).get("firstName");
+        verify(root).get("lastName");
+        verify(root).get("nickName");
+
+        verify(cb, times(3)).like(any(), eq(pattern));
+        verify(cb).or(any(), any(), any());
     }
 
     // isEmailLike

@@ -13,10 +13,17 @@ public class UserSpecification {
                 enabled == null ? null : cb.equal(root.get("enabled"), enabled);
     }
 
-    public static Specification<User> isNameLike(String name) {
+    public static Specification<User> isNameLike(String searchTerm) {
         return (root, query, cb) -> {
-            if (name == null || name.isBlank()) return null;
-            return cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+            if (searchTerm == null || searchTerm.isBlank()) return null;
+
+            String pattern = "%" + searchTerm.toLowerCase() + "%";
+
+            var firstNameLike = cb.like(cb.lower(root.get("firstName")), pattern);
+            var lastNameLike = cb.like(cb.lower(root.get("lastName")), pattern);
+            var nickNameLike = cb.like(cb.lower(root.get("nickName")), pattern);
+
+            return cb.or(firstNameLike, lastNameLike, nickNameLike);
         };
     }
 

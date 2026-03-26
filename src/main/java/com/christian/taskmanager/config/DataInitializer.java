@@ -31,7 +31,8 @@ public class DataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         if (userRepository.findByEmail(adminEmail).isEmpty()) {
             User admin = User.builder()
-                    .name("Admin")
+                    .firstName("Administrator")
+                    .nickName("Admin")
                     .email(adminEmail)
                     .password(passwordEncoder.encode(adminPassword))
                     .roles(List.of(Role.ROLE_ADMIN))

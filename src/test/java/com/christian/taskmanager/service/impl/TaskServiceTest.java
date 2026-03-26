@@ -42,10 +42,11 @@ public class TaskServiceTest {
     private TaskServiceImpl taskService;
 
     // Helpers
-    private static User createUser(Long id, String name, String email, List<Role> roles) {
+    private static User createUser(Long id, String firstName, String email, List<Role> roles) {
         return User.builder()
                 .id(id)
-                .name(name)
+                .firstName(firstName)
+                .nickName(firstName)
                 .email(email)
                 .roles(roles)
                 .build();

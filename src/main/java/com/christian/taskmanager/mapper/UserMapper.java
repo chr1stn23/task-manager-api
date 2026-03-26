@@ -13,7 +13,9 @@ public class UserMapper {
 
     public static User toEntity(UserCreateDTO dto) {
         var builder = User.builder()
-                .name(dto.name())
+                .firstName(dto.firstName())
+                .lastName(dto.lastName())
+                .nickName(dto.nickName())
                 .email(dto.email())
                 .roles(dto.roles());
 
@@ -27,7 +29,10 @@ public class UserMapper {
     public static UserResponseDTO toDTO(User user) {
         return new UserResponseDTO(
                 user.getId(),
-                user.getName(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getNickName(),
+                user.getProfileImageUrl(),
                 user.getEmail(),
                 user.getRoles().stream().map(Role::name).toList(),
                 user.isEnabled()
@@ -37,8 +42,11 @@ public class UserMapper {
     public static UserListResponseDTO toListDTO(User user) {
         return new UserListResponseDTO(
                 user.getId(),
-                user.getName(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getNickName(),
                 user.getEmail(),
+                user.getProfileImageUrl(),
                 user.isEnabled()
         );
     }

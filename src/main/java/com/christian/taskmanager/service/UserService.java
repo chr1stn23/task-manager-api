@@ -13,7 +13,7 @@ public interface UserService {
 
     UserResponseDTO create(UserCreateDTO request);
 
-    Page<UserListResponseDTO> getUsers(String name, String email, Boolean enabled, Pageable pageable);
+    Page<UserListResponseDTO> getUsers(String searchTerm, String email, Boolean enabled, Pageable pageable);
 
     UserResponseDTO getUserById(Long id);
 

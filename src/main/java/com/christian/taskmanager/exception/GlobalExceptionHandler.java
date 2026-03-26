@@ -44,6 +44,13 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(ex.getMessage(), "EMAIL_ALREADY_EXISTS"));
     }
 
+    @ExceptionHandler(NickNameAlreadyExistsException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleNickNameExists(NickNameAlreadyExistsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ResponseUtils.error(ex.getMessage(), "NICKNAME_ALREADY_EXISTS"));
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleInvalidCredentials(InvalidCredentialsException ex) {
         return ResponseEntity

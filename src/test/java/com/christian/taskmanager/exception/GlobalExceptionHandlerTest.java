@@ -86,6 +86,21 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("Should return 409 when NickNameAlreadyExistsException is thrown")
+    void shouldHandleNicknameAlreadyExistsException() {
+        // Arrange
+        NickNameAlreadyExistsException ex = new NickNameAlreadyExistsException("Email already exists");
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleNickNameExists(ex);
+
+        // Assert
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("NICKNAME_ALREADY_EXISTS", response.getBody().getError().getCode());
+    }
+
+    @Test
     @DisplayName("Should return 401 when InvalidCredentialsException is thrown")
     void shouldHandleInvalidCredentialsException() {
         // Arrange

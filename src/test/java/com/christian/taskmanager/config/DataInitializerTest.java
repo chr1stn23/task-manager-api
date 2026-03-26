@@ -37,7 +37,7 @@ public class DataInitializerTest {
     }
 
     @Test
-    void shouldCreateAdminIfNotExists() {
+    void ShouldCreateAdminIfNotExists() {
         // Arrange
         when(userRepository.findByEmail("admin@test.com"))
                 .thenReturn(Optional.empty());
@@ -62,7 +62,7 @@ public class DataInitializerTest {
     }
 
     @Test
-    void shouldNotCreateAdminIfAlreadyExists() {
+    void ShouldNotCreateAdminIfAlreadyExists() {
         // Arrange
         when(userRepository.findByEmail("admin@test.com"))
                 .thenReturn(Optional.of(new User()));

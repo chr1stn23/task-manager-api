@@ -56,7 +56,7 @@ class AuthControllerTest {
     }
 
     private RegisterRequestDTO registerRequest() {
-        return new RegisterRequestDTO("User", "user@test.com", "pA$$w0rd");
+        return new RegisterRequestDTO("User", "Lastname", "nickname", "user@test.com", "pA$$w0rd");
     }
 
     private AuthRequestDTO loginRequest() {
@@ -68,34 +68,41 @@ class AuthControllerTest {
     class RegisterTest {
         static Stream<Arguments> invalidRegisterRequests() {
             return Stream.of(
-                    Arguments.of(
-                            "Name is null",
-                            new RegisterRequestDTO(null, "user@test.com", "password")
-                    ),
-                    Arguments.of(
-                            "Name is blank",
-                            new RegisterRequestDTO(" ", "user@test.com", "password")
-                    ),
-                    Arguments.of(
-                            "Email is null",
-                            new RegisterRequestDTO("User", null, "password")
-                    ),
-                    Arguments.of(
-                            "Email is blank",
-                            new RegisterRequestDTO("User", " ", "password")
-                    ),
-                    Arguments.of(
-                            "Email is invalid",
-                            new RegisterRequestDTO("User", "user@", "password")
-                    ),
-                    Arguments.of(
-                            "Password is null",
-                            new RegisterRequestDTO("User", "user@test.com", null)
-                    ),
-                    Arguments.of(
-                            "Password is blank",
-                            new RegisterRequestDTO("User", "user@test.com", " ")
-                    )
+                    Arguments.of("FirstName is null",
+                            new RegisterRequestDTO(null, "", "nickname", "test@mail.com", "pA$$w0rd"
+                            )),
+                    Arguments.of("FirstName is blank",
+                            new RegisterRequestDTO("   ", "", "nickname", "test@mail.com", "pA$$w0rd"
+                            )),
+
+                    Arguments.of("Lastname too short (< 2)",
+                            new RegisterRequestDTO("User", "L", "nickname", "test@mail.com", "pA$$w0rd"
+                            )),
+
+                    Arguments.of("Nickname is null",
+                            new RegisterRequestDTO("User", "", null, "test@mail.com",
+                                    "pA$$w0rd"
+                            )),
+                    Arguments.of("Nickname is blank",
+                            new RegisterRequestDTO("User", "", "  ", "test@mail.com",
+                                    "pA$$w0rd"
+                            )),
+
+                    Arguments.of("Email is invalid",
+                            new RegisterRequestDTO("User", "", "nickname",
+                                    "invalid-email", "pA$$w0rd"
+                            )),
+
+                    Arguments.of("Password too short (< 8)",
+                            new RegisterRequestDTO("User", "",
+                                    "nickname", "test@mail.com",
+                                    "pA$$w0"
+                            )),
+                    Arguments.of("Password invalid pattern",
+                            new RegisterRequestDTO("User", ""
+                                    , "nickname", "test@mail" +
+                                    ".com", "12345678"
+                            ))
             );
         }
 

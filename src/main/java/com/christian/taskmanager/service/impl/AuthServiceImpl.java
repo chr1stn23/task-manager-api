@@ -5,9 +5,7 @@ import com.christian.taskmanager.dto.request.RegisterRequestDTO;
 import com.christian.taskmanager.entity.RefreshToken;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
-import com.christian.taskmanager.exception.EmailAlreadyExistsException;
-import com.christian.taskmanager.exception.InvalidCredentialsException;
-import com.christian.taskmanager.exception.UserDisabledException;
+import com.christian.taskmanager.exception.*;
 import com.christian.taskmanager.repository.RefreshTokenRepository;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.JwtService;
@@ -38,8 +36,14 @@ public class AuthServiceImpl implements AuthService {
             throw new EmailAlreadyExistsException("Email already registered");
         }
 
+        if (userRepository.existsByNickName(request.nickName())) {
+            throw new NickNameAlreadyExistsException("Nickname already registered");
+        }
+
         User user = User.builder()
-                .name(request.name())
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .nickName(request.nickName())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .roles(List.of(Role.ROLE_USER))

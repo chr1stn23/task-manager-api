@@ -10,6 +10,7 @@ import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.EmailAlreadyExistsException;
 import com.christian.taskmanager.exception.InvalidCredentialsException;
+import com.christian.taskmanager.exception.NickNameAlreadyExistsException;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.CurrentUserService;
@@ -54,10 +55,11 @@ public class UserServiceTest {
     private UserServiceImpl userService;
 
     // Helpers
-    private static User createUser(Long id, String name, String email, List<Role> roles) {
+    private static User createUser(Long id, String firstName, String email, List<Role> roles) {
         return User.builder()
                 .id(id)
-                .name(name)
+                .firstName(firstName)
+                .nickName(firstName)
                 .email(email)
                 .roles(roles)
                 .build();
@@ -70,10 +72,11 @@ public class UserServiceTest {
         @DisplayName("Should create a user")
         void shouldCreateUser() {
             // Arrange
-            UserCreateDTO request = new UserCreateDTO("test user", "user@test.com", "password",
+            UserCreateDTO request = new UserCreateDTO("test user", "LastName", "nickname", "user@test.com", "password",
                     List.of(Role.ROLE_USER), true);
 
             when(userRepository.existsByEmail(anyString())).thenReturn(false);
+            when(userRepository.existsByNickName(anyString())).thenReturn(false);
             when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
             when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -82,14 +85,14 @@ public class UserServiceTest {
 
             // Assert
             assertNotNull(response);
-            assertEquals("test user", response.name());
+            assertEquals("test user", response.firstName());
             assertEquals("user@test.com", response.email());
 
             ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(captor.capture());
 
             User savedUser = captor.getValue();
-            assertEquals("test user", savedUser.getName());
+            assertEquals("test user", savedUser.getFirstName());
             assertEquals("user@test.com", savedUser.getEmail());
             assertEquals("hashedPassword", savedUser.getPassword());
             assertEquals(List.of(Role.ROLE_USER), savedUser.getRoles());
@@ -101,10 +104,11 @@ public class UserServiceTest {
         @DisplayName("Should create a user enabled by default when field is null")
         void shouldCreateUserEnabledByDefault() {
             // Arrange
-            UserCreateDTO request = new UserCreateDTO("test user", "user@test.com", "password",
+            UserCreateDTO request = new UserCreateDTO("test user", null, "nickname", "user@test.com", "password",
                     List.of(Role.ROLE_USER), null);
 
             when(userRepository.existsByEmail(anyString())).thenReturn(false);
+            when(userRepository.existsByNickName(anyString())).thenReturn(false);
             when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
             when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -113,14 +117,14 @@ public class UserServiceTest {
 
             // Assert
             assertNotNull(response);
-            assertEquals("test user", response.name());
+            assertEquals("test user", response.firstName());
             assertEquals("user@test.com", response.email());
 
             ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(captor.capture());
 
             User savedUser = captor.getValue();
-            assertEquals("test user", savedUser.getName());
+            assertEquals("test user", savedUser.getFirstName());
             assertTrue(savedUser.isEnabled());
         }
 
@@ -128,7 +132,7 @@ public class UserServiceTest {
         @DisplayName("Should throw exception when email already exists")
         void shouldThrowExceptionWhenEmailExists() {
             // Arrange
-            UserCreateDTO request = new UserCreateDTO("test user", "user@test.com", "password",
+            UserCreateDTO request = new UserCreateDTO("test user", null, "nickname", "user@test.com", "password",
                     List.of(Role.ROLE_USER), true);
 
             when(userRepository.existsByEmail("user@test.com")).thenReturn(true);
@@ -137,6 +141,24 @@ public class UserServiceTest {
             assertThatThrownBy(() -> userService.create(request))
                     .isInstanceOf(EmailAlreadyExistsException.class)
                     .hasMessage("Email already registered");
+            verify(passwordEncoder, never()).encode(anyString());
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("Should throw exception when nickname already exists")
+        void shouldThrowExceptionWhenNicknameExists() {
+            // Arrange
+            UserCreateDTO request = new UserCreateDTO("test user", null, "nickname", "user@test.com", "password",
+                    List.of(Role.ROLE_USER), true);
+
+            when(userRepository.existsByEmail("user@test.com")).thenReturn(false);
+            when(userRepository.existsByNickName("nickname")).thenReturn(true);
+
+            // Act/Assert
+            assertThatThrownBy(() -> userService.create(request))
+                    .isInstanceOf(NickNameAlreadyExistsException.class)
+                    .hasMessage("NickName already registered");
             verify(passwordEncoder, never()).encode(anyString());
             verify(userRepository, never()).save(any(User.class));
         }
@@ -186,7 +208,7 @@ public class UserServiceTest {
             // Assert
             assertNotNull(response);
             assertEquals(1, response.getTotalElements());
-            assertEquals(filterName, response.getContent().getFirst().name());
+            assertEquals(filterName, response.getContent().getFirst().firstName());
             verify(userRepository).findAll(ArgumentMatchers.<Specification<User>>any(), eq(pageable));
         }
 
@@ -281,7 +303,7 @@ public class UserServiceTest {
             Long currentId = 1L;
             Long targetId = 2L;
             User user = createUser(targetId, "Name", "test@mail.com", List.of(Role.ROLE_USER));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New Name", "new@mail.com",
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New Name", null, "nickname", "new@mail.com",
                     List.of(Role.ROLE_USER), true);
 
             when(userRepository.findByIdWithRoles(targetId)).thenReturn(Optional.of(user));
@@ -294,7 +316,7 @@ public class UserServiceTest {
 
             // Assert
             assertNotNull(result);
-            assertEquals("New Name", user.getName());
+            assertEquals("New Name", user.getFirstName());
             assertEquals("new@mail.com", user.getEmail());
             verify(userRepository).save(user);
         }
@@ -305,7 +327,8 @@ public class UserServiceTest {
             // Arrange
             Long id = 1L;
             User user = createUser(id, "Name", "mail@test.com", List.of(Role.ROLE_ADMIN));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New", "new@mail.com", List.of(Role.ROLE_ADMIN),
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New", null, "nickname", "new@mail.com",
+                    List.of(Role.ROLE_ADMIN),
                     true);
 
             when(userRepository.findByIdWithRoles(id)).thenReturn(Optional.of(user));
@@ -318,9 +341,9 @@ public class UserServiceTest {
 
             // Assert
             assertNotNull(response);
-            assertEquals("New", user.getName());
+            assertEquals("New", user.getFirstName());
             assertEquals("new@mail.com", user.getEmail());
-            assertEquals("New", response.name());
+            assertEquals("New", response.firstName());
             assertEquals("new@mail.com", response.email());
             verify(userRepository).save(user);
         }
@@ -330,7 +353,8 @@ public class UserServiceTest {
         void shouldAllowAdminToUpdateHimselfWhenEnabledIsNull() {
             Long id = 1L;
             User user = createUser(id, "Name", "mail@test.com", List.of(Role.ROLE_ADMIN));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New", "new@mail.com", List.of(Role.ROLE_ADMIN),
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New", null, "nickname", "new@mail.com",
+                    List.of(Role.ROLE_ADMIN),
                     null);
 
             when(userRepository.findByIdWithRoles(id)).thenReturn(Optional.of(user));
@@ -351,8 +375,8 @@ public class UserServiceTest {
             Long id = 1L;
             User user = new User();
             user.setId(id);
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", "mail@test.com", List.of(Role.ROLE_ADMIN)
-                    , false);
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", null, "nickname", "mail@test.com",
+                    List.of(Role.ROLE_ADMIN), false);
 
             when(userRepository.findByIdWithRoles(id)).thenReturn(Optional.of(user));
             when(currentUserService.getCurrentUserId()).thenReturn(id);
@@ -371,8 +395,8 @@ public class UserServiceTest {
             Long id = 1L;
             User user = new User();
             user.setId(id);
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", "mail@test.com", List.of(Role.ROLE_USER),
-                    true);
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", null, "nickname", "mail@test.com",
+                    List.of(Role.ROLE_USER), true);
 
             when(userRepository.findByIdWithRoles(id)).thenReturn(Optional.of(user));
             when(currentUserService.getCurrentUserId()).thenReturn(id);
@@ -388,8 +412,8 @@ public class UserServiceTest {
         void shouldThrowNotFoundExceptionWhenUserNotFound() {
             // Arrange
             Long id = 1L;
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", "mail@test.com", List.of(Role.ROLE_USER),
-                    true);
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", null, "nickname", "mail@test.com",
+                    List.of(Role.ROLE_USER), true);
 
             when(userRepository.findByIdWithRoles(id)).thenReturn(Optional.empty());
 
@@ -407,7 +431,8 @@ public class UserServiceTest {
             Long currentId = 1L;
             Long targetId = 2L;
             User user = createUser(2L, "Name", "test@mail.com", List.of(Role.ROLE_USER));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Updated Name", "updated@mail.com", null, null);
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Updated Name", null, "nickname", "updated@mail" +
+                    ".com", null, null);
 
             when(userRepository.findByIdWithRoles(targetId)).thenReturn(Optional.of(user));
             when(currentUserService.getCurrentUserId()).thenReturn(currentId);
@@ -419,7 +444,7 @@ public class UserServiceTest {
 
             // Assert
             assertNotNull(result);
-            assertEquals("Updated Name", user.getName());
+            assertEquals("Updated Name", user.getFirstName());
             assertEquals("updated@mail.com", user.getEmail());
             assertEquals(List.of(Role.ROLE_USER), user.getRoles());
             assertTrue(user.isEnabled());
@@ -433,7 +458,7 @@ public class UserServiceTest {
             Long currentId = 1L;
             Long targetId = 2L;
             User user = createUser(targetId, "Name", "old@mail.com", List.of(Role.ROLE_USER));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", "existing@mail.com",
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", null, "nickname", "existing@mail.com",
                     List.of(Role.ROLE_USER), true);
 
             when(userRepository.findByIdWithRoles(targetId)).thenReturn(Optional.of(user));
@@ -449,13 +474,36 @@ public class UserServiceTest {
         }
 
         @Test
+        @DisplayName("Should throw exception when updating nickname to one that already exists")
+        void shouldThrowExceptionWhenNicknameAlreadyExists() {
+            // Arrange
+            Long currentId = 1L;
+            Long targetId = 2L;
+            User user = createUser(targetId, "Name", "old@mail.com", List.of(Role.ROLE_USER));
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", null, "nickname", "test@mail.com",
+                    List.of(Role.ROLE_USER), true);
+
+            when(userRepository.findByIdWithRoles(targetId)).thenReturn(Optional.of(user));
+            when(currentUserService.getCurrentUserId()).thenReturn(currentId);
+            when(userRepository.existsByEmail("test@mail.com")).thenReturn(false);
+            when(userRepository.existsByNickName("nickname")).thenReturn(true);
+
+            // Act / Assert
+            assertThatThrownBy(() -> userService.updateByAdmin(targetId, request))
+                    .isInstanceOf(NickNameAlreadyExistsException.class)
+                    .hasMessage("NickName already registered");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("Should update user when email remains the same")
         void shouldUpdateUserWhenEmailRemainsTheSame() {
             // Arrange
             Long currentId = 1L;
             Long targetId = 2L;
             User user = createUser(targetId, "Name", "same@mail.com", List.of(Role.ROLE_USER));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Updated Name", "same@mail.com",
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Updated Name", null, "nickname", "same@mail.com",
                     List.of(Role.ROLE_USER), true);
 
             when(userRepository.findByIdWithRoles(targetId)).thenReturn(Optional.of(user));
@@ -477,7 +525,8 @@ public class UserServiceTest {
             Long currentId = 1L;
             Long targetId = 2L;
             User user = createUser(targetId, "Name", "mail@test.com", List.of(Role.ROLE_USER));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Updated", "new@mail.com", List.of(), true);
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Updated", null, "nickname", "new@mail.com",
+                    List.of(), true);
 
             when(userRepository.findByIdWithRoles(targetId)).thenReturn(Optional.of(user));
             when(currentUserService.getCurrentUserId()).thenReturn(currentId);
@@ -497,7 +546,8 @@ public class UserServiceTest {
             // Arrange
             Long id = 1L;
             User user = createUser(id, "Name", "mail@test.com", List.of(Role.ROLE_ADMIN));
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New", "new@mail.com", null, true);
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New", null, "nickname", "new@mail.com", null,
+                    true);
 
             when(userRepository.findByIdWithRoles(id)).thenReturn(Optional.of(user));
             when(currentUserService.getCurrentUserId()).thenReturn(id);
@@ -523,7 +573,7 @@ public class UserServiceTest {
             Long userId = 1L;
             String sameEmail = "same@mail.com";
             User user = createUser(userId, "Old Name", sameEmail, List.of(Role.ROLE_USER));
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", sameEmail);
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", null, "nickname", sameEmail);
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
@@ -533,7 +583,7 @@ public class UserServiceTest {
             userService.updateBySelf(request);
 
             // Assert
-            assertEquals("New Name", user.getName());
+            assertEquals("New Name", user.getFirstName());
             assertEquals(sameEmail, user.getEmail());
             verify(userRepository, never()).existsByEmail(anyString());
             verify(userRepository).save(user);
@@ -545,7 +595,7 @@ public class UserServiceTest {
             // Arrange
             Long userId = 1L;
             User user = createUser(userId, "Name", "old@mail.com", List.of(Role.ROLE_USER));
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", "new@mail.com");
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", null, "nickname", "new@mail.com");
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
@@ -556,7 +606,7 @@ public class UserServiceTest {
             userService.updateBySelf(request);
 
             // Assert
-            assertEquals("New Name", user.getName());
+            assertEquals("New Name", user.getFirstName());
             assertEquals("new@mail.com", user.getEmail());
 
             verify(userRepository).existsByEmail("new@mail.com");
@@ -568,7 +618,7 @@ public class UserServiceTest {
         void shouldThrowNotFoundExceptionWhenUserNotFound() {
             // Arrange
             Long userId = 1L;
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", "mail@test.com");
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", null, "nickname", "mail@test.com");
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.empty());
@@ -587,7 +637,7 @@ public class UserServiceTest {
             // Arrange
             Long userId = 1L;
             User user = createUser(userId, "Name", "old@mail.com", List.of(Role.ROLE_USER));
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", "existing@mail.com");
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", null, "nickname", "existing@mail.com");
 
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
@@ -597,6 +647,27 @@ public class UserServiceTest {
             assertThatThrownBy(() -> userService.updateBySelf(request))
                     .isInstanceOf(EmailAlreadyExistsException.class)
                     .hasMessage("Email already registered");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should throw exception when updating to a nickname that already exists")
+        void shouldThrowExceptionWhenNicknameAlreadyExists() {
+            // Arrange
+            Long userId = 1L;
+            User user = createUser(userId, "Name", "old@mail.com", List.of(Role.ROLE_USER));
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("Name", null, "nickname", "test@mail.com");
+
+            when(currentUserService.getCurrentUserId()).thenReturn(userId);
+            when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
+            when(userRepository.existsByEmail("test@mail.com")).thenReturn(false);
+            when(userRepository.existsByNickName("nickname")).thenReturn(true);
+
+            // Act / Assert
+            assertThatThrownBy(() -> userService.updateBySelf(request))
+                    .isInstanceOf(NickNameAlreadyExistsException.class)
+                    .hasMessage("NickName already registered");
 
             verify(userRepository, never()).save(any());
         }

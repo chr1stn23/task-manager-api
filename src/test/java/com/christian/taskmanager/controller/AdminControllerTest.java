@@ -75,21 +75,39 @@ public class AdminControllerTest {
     class CreateUserTests {
         static Stream<Arguments> invalidCreateRequests() {
             return Stream.of(
-                    Arguments.of("Name is null",
-                            new UserCreateDTO(null, "test@mail.com", "12345678", List.of(Role.ROLE_USER), true)),
-                    Arguments.of("Name is blank",
-                            new UserCreateDTO("   ", "test@mail.com", "12345678", List.of(Role.ROLE_USER), true)),
+                    Arguments.of("FirstName is null",
+                            new UserCreateDTO(null, "", "nickname", "test@mail.com", "pA$$w0rd",
+                                    List.of(Role.ROLE_USER), true)),
+                    Arguments.of("FirstName is blank",
+                            new UserCreateDTO("   ", "", "nickname", "test@mail.com", "pA$$w0rd",
+                                    List.of(Role.ROLE_USER), true)),
+
+                    Arguments.of("Lastname too short (< 2)",
+                            new UserCreateDTO("User", "L", "nickname", "test@mail.com", "pA$$w0rd",
+                                    List.of(Role.ROLE_USER), true)),
+
+                    Arguments.of("Nickname is null",
+                            new UserCreateDTO("User", "", null, "test@mail.com", "pA$$w0rd",
+                                    List.of(Role.ROLE_USER), true)),
+                    Arguments.of("Nickname is blank",
+                            new UserCreateDTO("User", "", "  ", "test@mail.com", "pA$$w0rd",
+                                    List.of(Role.ROLE_USER), true)),
 
                     Arguments.of("Email is invalid",
-                            new UserCreateDTO("User", "invalid-email", "12345678", List.of(Role.ROLE_USER), true)),
+                            new UserCreateDTO("User", "", "nickname", "invalid-email", "pA$$w0rd",
+                                    List.of(Role.ROLE_USER), true)),
 
                     Arguments.of("Password too short (< 8)",
-                            new UserCreateDTO("User", "test@mail.com", "1234567", List.of(Role.ROLE_USER), true)),
+                            new UserCreateDTO("User", "", "nickname", "test@mail.com", "pA$$w0",
+                                    List.of(Role.ROLE_USER), true)),
+                    Arguments.of("Password invalid pattern",
+                            new UserCreateDTO("User", "", "nickname", "test@mail.com", "12345678",
+                                    List.of(Role.ROLE_USER), true)),
 
                     Arguments.of("Roles list empty",
-                            new UserCreateDTO("User", "test@mail.com", "12345678", List.of(), true)),
+                            new UserCreateDTO("User", "", "nickname", "test@mail.com", "pA$$w0rd", List.of(), true)),
                     Arguments.of("Roles list null",
-                            new UserCreateDTO("User", "test@mail.com", "12345678", null, true))
+                            new UserCreateDTO("User", "", "nickname", "test@mail.com", "pA$$w0rd", null, true))
             );
         }
 
@@ -98,11 +116,12 @@ public class AdminControllerTest {
         void shouldCreateUserSuccessfully() throws Exception {
             // Arrange
             UserCreateDTO request = new UserCreateDTO(
-                    "User", "user@test.com", "pA$$w0rd", List.of(Role.ROLE_USER),
+                    "User", "Lastname", "nickname", "user@test.com", "pA$$w0rd", List.of(Role.ROLE_USER),
                     true);
 
             UserResponseDTO response = new UserResponseDTO(
-                    1L, "User", "user@test.com", List.of(Role.ROLE_USER.toString()), true);
+                    1L, "User", "Lastname", "nickname", null, "user@test.com", List.of(Role.ROLE_USER.toString()),
+                    true);
 
             when(userService.create(any(UserCreateDTO.class))).thenReturn(response);
 
@@ -112,7 +131,7 @@ public class AdminControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value("User"));
+                    .andExpect(jsonPath("$.data.firstName").value("User"));
         }
 
         @ParameterizedTest(name = "Invalid request case: {0}")
@@ -137,7 +156,8 @@ public class AdminControllerTest {
         @DisplayName("Should return paginated users with filters")
         void shouldReturnPaginatedUsers() throws Exception {
             // Arrange
-            UserListResponseDTO user = new UserListResponseDTO(1L, "Admin", "admin@test.com", true);
+            UserListResponseDTO user = new UserListResponseDTO(1L, "Admin", "Lastname", "nickname", "admin@test.com",
+                    null, true);
             Page<UserListResponseDTO> page = new PageImpl<>(List.of(user));
             when(userService.getUsers(eq("Admin"), isNull(), eq(true), any(Pageable.class)))
                     .thenReturn(page);
@@ -177,7 +197,7 @@ public class AdminControllerTest {
             // Arrange
             Long userId = 1L;
             UserResponseDTO response = new UserResponseDTO(
-                    userId, "Mario", "test@test.com", List.of("ROLE_USER"), true
+                    userId, "Mario", "Casas", "mario123", null, "test@test.com", List.of("ROLE_USER"), true
             );
 
             when(userService.getUserById(userId)).thenReturn(response);
@@ -187,7 +207,7 @@ public class AdminControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.id").value(userId))
-                    .andExpect(jsonPath("$.data.name").value("Mario"))
+                    .andExpect(jsonPath("$.data.firstName").value("Mario"))
                     .andExpect(jsonPath("$.data.email").value("test@test.com"));
             verify(userService).getUserById(userId);
         }
@@ -228,26 +248,32 @@ public class AdminControllerTest {
     class UpdateUserByIdTests {
         static Stream<Arguments> invalidUpdateRequest() {
             return Stream.of(
-                    Arguments.of(
-                            "Name null",
-                            new UserUpdateByAdminDTO(null, "user@test.com", List.of(Role.ROLE_USER), true)
-                    ),
-                    Arguments.of(
-                            "Name blank",
-                            new UserUpdateByAdminDTO("  ", "user@test.com", null, null)
-                    ),
-                    Arguments.of(
-                            "Email null",
-                            new UserUpdateByAdminDTO("User", null, null, null)
-                    ),
-                    Arguments.of(
-                            "Email null",
-                            new UserUpdateByAdminDTO("User", "  ", null, null)
-                    ),
-                    Arguments.of(
-                            "Email invalid",
-                            new UserUpdateByAdminDTO("User", "user_test.com@", null, null)
-                    )
+                    Arguments.of("FirstName is null",
+                            new UserUpdateByAdminDTO(null, "", "nickname", "test@mail.com",
+                                    List.of(Role.ROLE_USER), true)),
+                    Arguments.of("FirstName is blank",
+                            new UserUpdateByAdminDTO("   ", "", "nickname", "test@mail.com",
+                                    List.of(Role.ROLE_USER), true)),
+
+                    Arguments.of("Lastname too short (< 2)",
+                            new UserUpdateByAdminDTO("User", "L", "nickname", "test@mail.com",
+                                    List.of(Role.ROLE_USER), true)),
+
+                    Arguments.of("Nickname is null",
+                            new UserUpdateByAdminDTO("User", "", null, "test@mail.com",
+                                    List.of(Role.ROLE_USER), true)),
+                    Arguments.of("Nickname is blank",
+                            new UserUpdateByAdminDTO("User", "", "  ", "test@mail.com",
+                                    List.of(Role.ROLE_USER), true)),
+
+                    Arguments.of("Email is invalid",
+                            new UserUpdateByAdminDTO("User", "", "nickname", "invalid-email",
+                                    List.of(Role.ROLE_USER), true)),
+
+                    Arguments.of("Roles list empty",
+                            new UserUpdateByAdminDTO("User", "", "nickname", "test@mail.com", List.of(), true)),
+                    Arguments.of("Roles list null",
+                            new UserUpdateByAdminDTO("User", "", "nickname", "test@mail.com", null, true))
             );
         }
 
@@ -256,9 +282,11 @@ public class AdminControllerTest {
         void shouldUpdateUserSuccessfully() throws Exception {
             // Arrange
             Long userId = 1L;
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New Name", "new@test.com",
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("New FirstName", "New LastName", "New nickname",
+                    "new@test.com",
                     List.of(Role.ROLE_ADMIN), true);
-            UserResponseDTO response = new UserResponseDTO(userId, "New Name", "new@test.com",
+            UserResponseDTO response = new UserResponseDTO(userId, "New FirstName", "New LastName", "New nickname",
+                    null, "new@test.com",
                     List.of(Role.ROLE_ADMIN.toString()), true);
             when(userService.updateByAdmin(eq(userId), any(UserUpdateByAdminDTO.class))).thenReturn(response);
 
@@ -268,7 +296,7 @@ public class AdminControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value("New Name"))
+                    .andExpect(jsonPath("$.data.firstName").value("New FirstName"))
                     .andExpect(jsonPath("$.data.enabled").value(true));
         }
 
@@ -292,7 +320,8 @@ public class AdminControllerTest {
         void shouldReturn404WhenUserToUpdateNotExist() throws Exception {
             // Arrange
             Long userId = 99L;
-            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", "user@test.com", List.of(Role.ROLE_USER),
+            UserUpdateByAdminDTO request = new UserUpdateByAdminDTO("Name", "LastName", "nickname", "user@test.com",
+                    List.of(Role.ROLE_USER),
                     true);
 
             when(userService.updateByAdmin(eq(userId), any(UserUpdateByAdminDTO.class)))

@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Optional<User> findByIdWithRoles(Long id);
 
     boolean existsByEmail(String email);
+
+    boolean existsByNickName(String nickName);
 }

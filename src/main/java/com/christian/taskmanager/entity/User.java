@@ -20,8 +20,14 @@ import java.util.List;
 @AllArgsConstructor
 public class User extends BaseEntity implements UserDetails {
 
-    @Column(nullable = false)
-    private String name;
+    @Column(nullable = false, length = 50, name = "first_name")
+    private String firstName;
+
+    @Column(length = 50, name = "last_name")
+    private String lastName;
+
+    @Column(nullable = false, unique = true, length = 30)
+    private String nickName;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -29,13 +35,21 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
+    @Column(name = "profile_image_id")
+    private String profileImageId;
+
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
+    @Builder.Default
     private List<Role> roles = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @Builder.Default
     private List<Task> tasks = new ArrayList<>();
 
     @Column(nullable = false)

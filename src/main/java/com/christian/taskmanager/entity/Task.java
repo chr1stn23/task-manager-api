@@ -36,5 +36,6 @@ public class Task extends BaseEntity {
     private User user;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean deleted = false;
 }

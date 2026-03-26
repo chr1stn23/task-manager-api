@@ -29,9 +29,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,7 +65,7 @@ public class UserControllerTest {
             // Arrange
             Long userId = 1L;
             UserResponseDTO response = new UserResponseDTO(
-                    userId, "John Doe", "john@mail.com", List.of(Role.ROLE_USER.toString()), true
+                    userId, "John", "Doe", "john123", null, "john@mail.com", List.of(Role.ROLE_USER.toString()), true
             );
             when(currentUserService.getCurrentUserId()).thenReturn(userId);
             when(userService.getUserById(1L)).thenReturn(response);
@@ -77,7 +75,8 @@ public class UserControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.id").value(userId))
-                    .andExpect(jsonPath("$.data.name").value("John Doe"));
+                    .andExpect(jsonPath("$.data.firstName").value("John"))
+                    .andExpect(jsonPath("$.data.lastName").value("Doe"));
         }
 
         @Test
@@ -102,33 +101,32 @@ public class UserControllerTest {
         static Stream<Arguments> invalidUserRequests() {
             return Stream.of(
                     Arguments.of(
-                            "Name is null",
-                            new UserUpdateBySelfDTO(null, "test@mail.com")
+                            "FirstName is null",
+                            new UserUpdateBySelfDTO(null, "lastname", "nickname", "test@mail.com")
                     ),
                     Arguments.of(
-                            "Name is empty",
-                            new UserUpdateBySelfDTO("", "test@mail.com")
+                            "FirstName is empty",
+                            new UserUpdateBySelfDTO("", "lastname", "nickname", "test@mail.com")
                     ),
                     Arguments.of(
-                            "Name is blank",
-                            new UserUpdateBySelfDTO("   ", "test@mail.com")
+                            "FirstName is blank",
+                            new UserUpdateBySelfDTO("   ", "lastname", "nickname", "test@mail.com")
                     ),
                     Arguments.of(
                             "Email is null",
-                            new UserUpdateBySelfDTO("test name", null)
+                            new UserUpdateBySelfDTO("test name", "lastname", "nickname", null)
                     ),
                     Arguments.of(
                             "Email is empty",
-                            new UserUpdateBySelfDTO("test name", "")
+                            new UserUpdateBySelfDTO("test name", "lastname", "nickname", "")
                     ),
                     Arguments.of(
                             "Email is blank",
-                            new UserUpdateBySelfDTO("test name", " ")
+                            new UserUpdateBySelfDTO("test name", "lastname", "nickname", "  ")
                     ),
                     Arguments.of(
                             "Email is invalid",
-                            new UserUpdateBySelfDTO("test name", "test@")
-                    )
+                            new UserUpdateBySelfDTO("test name", "lastname", "nickname", "test@"))
             );
         }
 
@@ -137,9 +135,11 @@ public class UserControllerTest {
         void shouldUpdateCurrentUserSuccessfully() throws Exception {
             // Arrange
             Long userId = 1L;
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New Name", "new@mail.com");
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("New FirstName", "LastName", "nickname", "new@mail" +
+                    ".com");
             UserResponseDTO response = new UserResponseDTO(
-                    userId, "New Name", "new@mail.com", List.of(Role.ROLE_USER.toString()), true);
+                    userId, "New FirstName", "LastName", "nickname", null, "new@mail.com",
+                    List.of(Role.ROLE_USER.toString()), true);
             when(userService.updateBySelf(request)).thenReturn(response);
 
             // Act/Assert
@@ -148,7 +148,7 @@ public class UserControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value("New Name"))
+                    .andExpect(jsonPath("$.data.firstName").value("New FirstName"))
                     .andExpect(jsonPath("$.data.email").value("new@mail.com"));
             verify(userService).updateBySelf(request);
         }
@@ -157,7 +157,7 @@ public class UserControllerTest {
         @DisplayName("Should return 404 when user does not exist")
         void shouldReturnNotFoundWhenUserNotFound() throws Exception {
             // Arrange
-            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("test user", "user@test.com");
+            UserUpdateBySelfDTO request = new UserUpdateBySelfDTO("test user", "LastName", "nickname", "user@test.com");
             when(userService.updateBySelf(request)).thenThrow(new NotFoundException("User not found"));
 
             // Act/Assert
@@ -256,7 +256,8 @@ public class UserControllerTest {
         @ParameterizedTest(name = "Invalid password request case: {0}")
         @MethodSource("invalidPasswordRequests")
         @DisplayName("Should return 400 when request is invalid")
-        void shouldReturnBadRequestWhenRequestInvalid(@SuppressWarnings("unused") String caseName, PasswordChangeRequestDTO request) throws Exception {
+        void shouldReturnBadRequestWhenRequestInvalid(@SuppressWarnings("unused") String caseName,
+                PasswordChangeRequestDTO request) throws Exception {
             // Act/Assert
             mockMvc.perform(post("/api/users/me/change-password")
                             .contentType(MediaType.APPLICATION_JSON)

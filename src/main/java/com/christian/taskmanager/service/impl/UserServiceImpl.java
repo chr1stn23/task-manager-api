@@ -10,6 +10,7 @@ import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.EmailAlreadyExistsException;
 import com.christian.taskmanager.exception.InvalidCredentialsException;
+import com.christian.taskmanager.exception.NickNameAlreadyExistsException;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.mapper.UserMapper;
 import com.christian.taskmanager.repository.UserRepository;
@@ -41,6 +42,10 @@ public class UserServiceImpl implements UserService {
             throw new EmailAlreadyExistsException("Email already registered");
         }
 
+        if (userRepository.existsByNickName(request.nickName())) {
+            throw new NickNameAlreadyExistsException("NickName already registered");
+        }
+
         User user = UserMapper.toEntity(request);
         user.setPassword(passwordEncoder.encode(request.password()));
         User saved = userRepository.save(user);
@@ -49,10 +54,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserListResponseDTO> getUsers(String name, String email, Boolean enabled, Pageable pageable) {
+    public Page<UserListResponseDTO> getUsers(String searchTerm, String email, Boolean enabled, Pageable pageable) {
         Specification<User> spec = Specification
                 .where(UserSpecification.isEnabled(enabled))
-                .and(UserSpecification.isNameLike(name))
+                .and(UserSpecification.isNameLike(searchTerm))
                 .and(UserSpecification.isEmailLike(email));
 
         return userRepository
@@ -93,7 +98,13 @@ public class UserServiceImpl implements UserService {
             throw new EmailAlreadyExistsException("Email already registered");
         }
 
-        user.setName(request.name());
+        if (userRepository.existsByNickName(request.nickName())) {
+            throw new NickNameAlreadyExistsException("NickName already registered");
+        }
+
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setNickName(request.nickName());
         user.setEmail(request.email());
 
         if (request.roles() != null && !request.roles().isEmpty()) {
@@ -119,7 +130,13 @@ public class UserServiceImpl implements UserService {
             throw new EmailAlreadyExistsException("Email already registered");
         }
 
-        user.setName(request.name());
+        if (userRepository.existsByNickName(request.nickName())) {
+            throw new NickNameAlreadyExistsException("NickName already registered");
+        }
+
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setNickName(request.nickName());
         user.setEmail(request.email());
 
         return UserMapper.toDTO(userRepository.save(user));
