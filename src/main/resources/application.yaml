@@ -12,6 +12,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
 
 jwt:
   secret: ${JWT_SECRET}
@@ -23,3 +27,8 @@ refresh-token:
 admin:
   email: ${ADMIN_EMAIL}
   password: ${ADMIN_PASSWORD}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}

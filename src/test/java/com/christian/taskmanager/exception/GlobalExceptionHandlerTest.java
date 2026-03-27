@@ -10,6 +10,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -236,6 +237,61 @@ class GlobalExceptionHandlerTest {
         assertNotNull(response.getBody());
         assertEquals("REFRESH_TOKEN_EXPIRED", response.getBody().getError().getCode());
         assertTrue(response.getBody().getError().getMessage().contains("abc123"));
+    }
+
+    @Test
+    @DisplayName("Should return 500 when CloudinaryUploadException is thrown")
+    void shouldHandleCloudinaryUploadException() {
+        // Arrange
+        CloudinaryUploadException ex =
+                new CloudinaryUploadException("Error uploading image");
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response =
+                handler.handleCloudinaryUploadException(ex);
+
+        // Assert
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Error uploading image", response.getBody().getError().getMessage());
+        assertEquals("CLOUDINARY_UPLOAD_ERROR", response.getBody().getError().getCode());
+    }
+
+    @Test
+    @DisplayName("Should handle CloudinaryUploadException with cause")
+    void shouldHandleCloudinaryUploadExceptionWithCause() {
+        // Arrange
+        Throwable cause = new RuntimeException("Root cause");
+        CloudinaryUploadException ex =
+                new CloudinaryUploadException("Error uploading image", cause);
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response =
+                handler.handleCloudinaryUploadException(ex);
+
+        // Assert
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Error uploading image", response.getBody().getError().getMessage());
+        assertEquals("CLOUDINARY_UPLOAD_ERROR", response.getBody().getError().getCode());
+    }
+
+    @Test
+    @DisplayName("Should return 400 when MaxUploadSizeExceededException is thrown")
+    void shouldHandleMaxUploadSizeExceededException() {
+        // Arrange
+        MaxUploadSizeExceededException ex =
+                new MaxUploadSizeExceededException(2 * 1024 * 1024);
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response =
+                handler.handleMaxUploadSizeExceeded(ex);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("MAX_UPLOAD_SIZE_EXCEEDED", response.getBody().getError().getCode());
+        assertNotNull(response.getBody().getError().getMessage());
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.christian.taskmanager.controller;
 
 import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
+import com.christian.taskmanager.dto.request.ProfilePictureUploadDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
@@ -57,6 +58,18 @@ public class UserController {
     public ApiResponseWrapper<String> changePassword(@RequestBody @Valid PasswordChangeRequestDTO request) {
         userService.changePassword(request);
         return ResponseUtils.success("Password updated successfully");
+    }
+
+    @Operation(summary = "Upload profile picture")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Profile picture updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid file type or size exceeds limit"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @PostMapping("/me/upload-picture")
+    public ApiResponseWrapper<String> uploadProfilePicture(@Valid @ModelAttribute ProfilePictureUploadDTO dto) {
+        userService.updateProfilePicture(dto.file());
+        return ResponseUtils.success("Profile picture updated successfully");
     }
 
     @Operation(summary = "Disable current user profile")

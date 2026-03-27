@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Arrays;
 
@@ -98,9 +99,23 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RefreshTokenException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleRefreshTokenException(RefreshTokenException ex) {
-       return ResponseEntity
-               .status(HttpStatus.UNAUTHORIZED)
-               .body(ResponseUtils.error(ex.getMessage(), ex.getErrorCode()));
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ResponseUtils.error(ex.getMessage(), ex.getErrorCode()));
+    }
+
+    @ExceptionHandler(CloudinaryUploadException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleCloudinaryUploadException(CloudinaryUploadException ex) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ResponseUtils.error(ex.getMessage(), ex.getErrorCode()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ResponseUtils.error(ex.getMessage(), "MAX_UPLOAD_SIZE_EXCEEDED"));
     }
 
     @ExceptionHandler(Exception.class)

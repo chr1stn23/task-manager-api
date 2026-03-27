@@ -4,6 +4,7 @@ import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
+import com.christian.taskmanager.exception.CloudinaryUploadException;
 import com.christian.taskmanager.exception.InvalidCredentialsException;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.security.CurrentUserService;
@@ -21,6 +22,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -264,6 +266,97 @@ public class UserControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        }
+    }
+
+    @Nested
+    @DisplayName("uploadProfilePicture")
+    class UploadProfilePictureTests {
+        @Test
+        @DisplayName("Should upload profile picture successfully")
+        void shouldUploadProfilePictureSuccessfully() throws Exception {
+            // Arrange
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "profile.jpg",
+                    MediaType.IMAGE_JPEG_VALUE,
+                    "dummy-image-content".getBytes()
+            );
+
+            doNothing().when(userService).updateProfilePicture(any());
+
+            // Act/Assert
+            mockMvc.perform(multipart("/api/users/me/upload-picture")
+                            .file(file))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").value("Profile picture updated successfully"));
+
+            verify(userService).updateProfilePicture(any());
+        }
+
+        @Test
+        @DisplayName("Should return 400 when file is missing")
+        void shouldReturnBadRequestWhenFileMissing() throws Exception {
+            // Act/Assert
+            mockMvc.perform(multipart("/api/users/me/upload-picture"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        @DisplayName("Should return 400 when file is invalid")
+        void shouldReturn400WhenFileInvalid() throws Exception {
+            // Arrange
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "file.txt",
+                    MediaType.TEXT_PLAIN_VALUE,
+                    "invalid".getBytes()
+            );
+
+            // Act/Assert
+            mockMvc.perform(multipart("/api/users/me/upload-picture")
+                            .file(file))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        @DisplayName("Should return 400 when file exceeds validator size limit")
+        void shouldReturn400WhenFileTooLarge() throws Exception {
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "big.jpg",
+                    MediaType.IMAGE_JPEG_VALUE,
+                    new byte[3 * 1024 * 1024]
+            );
+
+            mockMvc.perform(multipart("/api/users/me/upload-picture")
+                            .file(file))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        @DisplayName("Should return 500 when Cloudinary upload fails")
+        void shouldReturnInternalServerErrorWhenUploadFails() throws Exception {
+            // Arrange
+            MockMultipartFile file = new MockMultipartFile(
+                    "file",
+                    "profile.jpg",
+                    MediaType.IMAGE_JPEG_VALUE,
+                    "dummy-image-content".getBytes()
+            );
+
+            doThrow(new CloudinaryUploadException("Upload failed"))
+                    .when(userService).updateProfilePicture(any());
+
+            // Act/Assert
+            mockMvc.perform(multipart("/api/users/me/upload-picture")
+                            .file(file))
+                    .andExpect(status().isInternalServerError())
+                    .andExpect(jsonPath("$.error.code").value("CLOUDINARY_UPLOAD_ERROR"));
         }
     }
 

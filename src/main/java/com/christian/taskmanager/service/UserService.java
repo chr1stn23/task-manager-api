@@ -8,6 +8,7 @@ import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
 
@@ -28,4 +29,6 @@ public interface UserService {
     void changePassword(PasswordChangeRequestDTO request);
 
     void resetPasswordByAdmin(Long id, String newPassword);
+
+    void updateProfilePicture(MultipartFile file);
 }

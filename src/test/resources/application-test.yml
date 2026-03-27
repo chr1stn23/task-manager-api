@@ -6,6 +6,10 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
 
 jwt:
   secret: "7960f5cf675c9e39071c0beabba68fca2a6de80612b314db300e2f6f832ce631"
@@ -17,3 +21,8 @@ refresh-token:
 admin:
   email: "admin@test.com"
   password: "Adm1n!234"
+
+cloudinary:
+  cloud-name: "cloud_name"
+  api-key: "api_key"
+  api-secret: "api_secret"

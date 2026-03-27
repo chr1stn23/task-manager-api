@@ -8,25 +8,30 @@ import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
-import com.christian.taskmanager.exception.EmailAlreadyExistsException;
-import com.christian.taskmanager.exception.InvalidCredentialsException;
-import com.christian.taskmanager.exception.NickNameAlreadyExistsException;
-import com.christian.taskmanager.exception.NotFoundException;
+import com.christian.taskmanager.exception.*;
+import com.christian.taskmanager.integration.cloudinary.CloudinaryService;
+import com.christian.taskmanager.integration.cloudinary.dto.CloudinaryUploadResponse;
 import com.christian.taskmanager.mapper.UserMapper;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.repository.specification.UserSpecification;
 import com.christian.taskmanager.security.CurrentUserService;
 import com.christian.taskmanager.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -34,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CurrentUserService currentUserService;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional
@@ -94,13 +100,8 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyExistsException("Email already registered");
-        }
-
-        if (userRepository.existsByNickName(request.nickName())) {
-            throw new NickNameAlreadyExistsException("NickName already registered");
-        }
+        validateEmailUniqueness(request.email(), user.getEmail());
+        validateNicknameUniqueness(request.nickName(), user.getNickName());
 
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
@@ -126,13 +127,8 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByIdWithRoles(currentUserId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyExistsException("Email already registered");
-        }
-
-        if (userRepository.existsByNickName(request.nickName())) {
-            throw new NickNameAlreadyExistsException("NickName already registered");
-        }
+        validateEmailUniqueness(request.email(), user.getEmail());
+        validateNicknameUniqueness(request.nickName(), user.getNickName());
 
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
@@ -193,12 +189,67 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void resetPasswordByAdmin(Long id, String newPassword) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
         String encodedPassword = passwordEncoder.encode(newPassword);
-        user.setPassword(encodedPassword);
-        userRepository.save(user);
+        int updatedRows = userRepository.updatePassword(id, encodedPassword);
+
+        if (updatedRows == 0) {
+            throw new NotFoundException("User not found");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateProfilePicture(MultipartFile file) {
+        User user = currentUserService.getCurrentUser();
+
+        deleteProfileImageIfExists(user.getProfileImageId());
+
+        String fileName = generateProfileImageFileName(user.getNickName());
+
+        CloudinaryUploadResponse response;
+        try {
+            response = cloudinaryService.upload(file, "profiles", fileName);
+        } catch (IOException e) {
+            throw new CloudinaryUploadException("Failed to upload the profile image: " + e.getMessage(), e);
+        }
+
+        int updatedRows = userRepository.updateProfileImage(user.getId(), response.getPublicId(),
+                response.getSecureUrl());
+        if (updatedRows == 0) {
+            throw new CloudinaryUploadException("Failed to update the profile image");
+        }
+    }
+
+    // ===================================================
+    //                   PRIVATE METHODS
+    // ===================================================
+
+    private void validateEmailUniqueness(String newEmail, String currentEmail) {
+        if (!newEmail.equals(currentEmail) && userRepository.existsByEmail(newEmail)) {
+            throw new EmailAlreadyExistsException("Email already registered");
+        }
+    }
+
+    private void validateNicknameUniqueness(String newNickname, String currentNickname) {
+        if (!newNickname.equals(currentNickname) && userRepository.existsByNickName(newNickname)) {
+            throw new NickNameAlreadyExistsException("NickName already registered");
+        }
+    }
+
+    private String generateProfileImageFileName(String nickname) {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        return nickname + "_" + timestamp;
+    }
+
+    private void deleteProfileImageIfExists(String profileImageId) {
+        if (profileImageId != null && !profileImageId.isEmpty()) {
+            try {
+                cloudinaryService.delete(profileImageId);
+            } catch (IOException e) {
+                log.warn("Failed to delete the previous image: {}", e.getMessage());
+            }
+        }
     }
 }

@@ -8,10 +8,9 @@ import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
-import com.christian.taskmanager.exception.EmailAlreadyExistsException;
-import com.christian.taskmanager.exception.InvalidCredentialsException;
-import com.christian.taskmanager.exception.NickNameAlreadyExistsException;
-import com.christian.taskmanager.exception.NotFoundException;
+import com.christian.taskmanager.exception.*;
+import com.christian.taskmanager.integration.cloudinary.CloudinaryService;
+import com.christian.taskmanager.integration.cloudinary.dto.CloudinaryUploadResponse;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.CurrentUserService;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +28,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +51,9 @@ public class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private CloudinaryService cloudinaryService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -671,6 +675,29 @@ public class UserServiceTest {
 
             verify(userRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Should not check nickname when it is the same")
+        void shouldNotCheckNicknameWhenSame() {
+            // Arrange
+            Long userId = 1L;
+            String sameNick = "nick";
+
+            User user = createUser(userId, "Name", "mail@test.com", List.of(Role.ROLE_USER));
+            user.setNickName(sameNick);
+            UserUpdateBySelfDTO request =
+                    new UserUpdateBySelfDTO("Name", null, sameNick, "mail@test.com");
+
+            when(currentUserService.getCurrentUserId()).thenReturn(userId);
+            when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
+            when(userRepository.save(any())).thenReturn(user);
+
+            // Act
+            userService.updateBySelf(request);
+
+            // Assert
+            verify(userRepository, never()).existsByNickName(any());
+        }
     }
 
     @Nested
@@ -889,18 +916,16 @@ public class UserServiceTest {
         void shouldResetPasswordSuccessfully() {
             // Arrange
             Long userId = 1L;
-            User user = createUser(userId, "Name", "mail@test.com", List.of(Role.ROLE_USER));
 
-            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(passwordEncoder.encode("newPassword")).thenReturn("encodedPassword");
+            when(userRepository.updatePassword(userId, "encodedPassword")).thenReturn(1);
 
             // Act
             userService.resetPasswordByAdmin(userId, "newPassword");
 
             // Assert
-            assertEquals("encodedPassword", user.getPassword());
             verify(passwordEncoder).encode("newPassword");
-            verify(userRepository).save(user);
+            verify(userRepository).updatePassword(userId, "encodedPassword");
         }
 
         @Test
@@ -909,15 +934,160 @@ public class UserServiceTest {
             // Arrange
             Long userId = 1L;
 
-            when(userRepository.findById(userId)).thenReturn(Optional.empty());
+            when(passwordEncoder.encode("newPassword")).thenReturn("encodedPassword");
+            when(userRepository.updatePassword(userId, "encodedPassword")).thenReturn(0);
 
             // Act/Assert
             assertThatThrownBy(() -> userService.resetPasswordByAdmin(userId, "newPassword"))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessage("User not found");
 
-            verify(passwordEncoder, never()).encode(any());
-            verify(userRepository, never()).save(any());
+            verify(passwordEncoder).encode("newPassword");
+            verify(userRepository).updatePassword(userId, "encodedPassword");
+        }
+    }
+
+    @Nested
+    @DisplayName("updateProfilePicture")
+    class UpdateProfilePicture {
+        @Test
+        @DisplayName("Should upload profile picture successfully")
+        void shouldUploadProfilePictureSuccessfully() throws Exception {
+            // Arrange
+            User user = createUser(1L, "nick", "mail@test.com", List.of(Role.ROLE_USER));
+            user.setProfileImageId(null);
+
+            MultipartFile file = mock(MultipartFile.class);
+
+            CloudinaryUploadResponse response = new CloudinaryUploadResponse();
+            response.setPublicId("publicId");
+            response.setSecureUrl("http://image.url");
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            when(cloudinaryService.upload(any(), eq("profiles"), any()))
+                    .thenReturn(response);
+            when(userRepository.updateProfileImage(1L, "publicId", "http://image.url"))
+                    .thenReturn(1);
+
+            // Act
+            userService.updateProfilePicture(file);
+
+            // Assert
+            verify(cloudinaryService).upload(any(), eq("profiles"), any());
+            verify(userRepository).updateProfileImage(1L, "publicId", "http://image.url");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when upload fails")
+        void shouldThrowWhenUploadFails() throws Exception {
+            // Arrange
+            User user = createUser(1L, "nick", "mail@test.com", List.of(Role.ROLE_USER));
+            MultipartFile file = mock(MultipartFile.class);
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            when(cloudinaryService.upload(any(), any(), any()))
+                    .thenThrow(new IOException("error"));
+
+            // Act/Assert
+            assertThatThrownBy(() -> userService.updateProfilePicture(file))
+                    .isInstanceOf(CloudinaryUploadException.class)
+                    .hasMessageContaining("Failed to upload the profile image");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when DB update fails")
+        void shouldThrowWhenDbUpdateFails() throws Exception {
+            User user = createUser(1L, "nick", "mail@test.com", List.of(Role.ROLE_USER));
+            MultipartFile file = mock(MultipartFile.class);
+
+            CloudinaryUploadResponse response = new CloudinaryUploadResponse();
+            response.setPublicId("publicId");
+            response.setSecureUrl("url");
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            when(cloudinaryService.upload(any(), any(), any()))
+                    .thenReturn(response);
+            when(userRepository.updateProfileImage(any(), any(), any()))
+                    .thenReturn(0);
+
+            assertThatThrownBy(() -> userService.updateProfilePicture(file))
+                    .isInstanceOf(CloudinaryUploadException.class)
+                    .hasMessage("Failed to update the profile image");
+        }
+
+        @Test
+        @DisplayName("Should not delete image when profileImageId is empty")
+        void shouldNotDeleteWhenProfileImageIdIsEmpty() throws Exception {
+            // Arrange
+            User user = createUser(1L, "nick", "mail@test.com", List.of(Role.ROLE_USER));
+            user.setProfileImageId("");
+
+            MultipartFile file = mock(MultipartFile.class);
+
+            CloudinaryUploadResponse response = new CloudinaryUploadResponse();
+            response.setPublicId("newId");
+            response.setSecureUrl("url");
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            when(cloudinaryService.upload(any(), any(), any())).thenReturn(response);
+            when(userRepository.updateProfileImage(any(), any(), any())).thenReturn(1);
+
+            // Act
+            userService.updateProfilePicture(file);
+
+            // Assert
+            verify(cloudinaryService, never()).delete(any());
+            verify(cloudinaryService).upload(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Should delete previous image if exists")
+        void shouldDeletePreviousImageIfExists() throws Exception {
+            // Arrange
+            User user = createUser(1L, "nick", "mail@test.com", List.of(Role.ROLE_USER));
+            user.setProfileImageId("oldId");
+
+            MultipartFile file = mock(MultipartFile.class);
+
+            CloudinaryUploadResponse response = new CloudinaryUploadResponse();
+            response.setPublicId("newId");
+            response.setSecureUrl("url");
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            when(cloudinaryService.upload(any(), any(), any())).thenReturn(response);
+            when(userRepository.updateProfileImage(any(), any(), any())).thenReturn(1);
+
+            // Act
+            userService.updateProfilePicture(file);
+
+            // Assert
+            verify(cloudinaryService).delete("oldId");
+        }
+
+        @Test
+        @DisplayName("Should continue when delete image fails")
+        void shouldContinueWhenDeleteFails() throws Exception {
+            // Arrange
+            User user = createUser(1L, "nick", "mail@test.com", List.of(Role.ROLE_USER));
+            user.setProfileImageId("oldId");
+
+            MultipartFile file = mock(MultipartFile.class);
+
+            CloudinaryUploadResponse response = new CloudinaryUploadResponse();
+            response.setPublicId("newId");
+            response.setSecureUrl("url");
+
+            when(currentUserService.getCurrentUser()).thenReturn(user);
+            doThrow(new IOException("fail")).when(cloudinaryService).delete("oldId");
+            when(cloudinaryService.upload(any(), any(), any())).thenReturn(response);
+            when(userRepository.updateProfileImage(any(), any(), any())).thenReturn(1);
+
+            // Act
+            userService.updateProfilePicture(file);
+
+            // Assert
+            verify(cloudinaryService).delete("oldId");
+            verify(cloudinaryService).upload(any(), any(), any());
         }
     }
 }
