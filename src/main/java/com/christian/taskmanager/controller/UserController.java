@@ -68,8 +68,7 @@ public class UserController {
     })
     @PostMapping("/me/upload-picture")
     public ApiResponseWrapper<String> uploadProfilePicture(@Valid @ModelAttribute ProfilePictureUploadDTO dto) {
-        userService.updateProfilePicture(dto.file());
-        return ResponseUtils.success("Profile picture updated successfully");
+        return ResponseUtils.success(userService.updateProfilePicture(dto.file()));
     }
 
     @Operation(summary = "Disable current user profile")

@@ -98,8 +98,8 @@ public class AuthController {
     private ResponseEntity<ApiResponseWrapper<AuthResponseDTO>> buildAuthResponse(TokenPair tokens) {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", tokens.refreshToken())
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+                .secure(false)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(Duration.ofDays(7))
                 .build();

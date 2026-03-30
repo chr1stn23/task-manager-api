@@ -283,14 +283,15 @@ public class UserControllerTest {
                     "dummy-image-content".getBytes()
             );
 
-            doNothing().when(userService).updateProfilePicture(any());
+            String expectedImageUrl = "https://example.com/profile.jpg";
+            when(userService.updateProfilePicture(any())).thenReturn(expectedImageUrl);
 
             // Act/Assert
             mockMvc.perform(multipart("/api/users/me/upload-picture")
                             .file(file))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data").value("Profile picture updated successfully"));
+                    .andExpect(jsonPath("$.data").value(expectedImageUrl));
 
             verify(userService).updateProfilePicture(any());
         }

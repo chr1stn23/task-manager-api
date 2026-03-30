@@ -201,7 +201,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateProfilePicture(MultipartFile file) {
+    public String updateProfilePicture(MultipartFile file) {
         User user = currentUserService.getCurrentUser();
 
         deleteProfileImageIfExists(user.getProfileImageId());
@@ -220,6 +220,8 @@ public class UserServiceImpl implements UserService {
         if (updatedRows == 0) {
             throw new CloudinaryUploadException("Failed to update the profile image");
         }
+
+        return response.getSecureUrl();
     }
 
     // ===================================================

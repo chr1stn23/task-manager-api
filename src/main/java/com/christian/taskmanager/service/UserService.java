@@ -30,5 +30,5 @@ public interface UserService {
 
     void resetPasswordByAdmin(Long id, String newPassword);
 
-    void updateProfilePicture(MultipartFile file);
+    String updateProfilePicture(MultipartFile file);
 }
