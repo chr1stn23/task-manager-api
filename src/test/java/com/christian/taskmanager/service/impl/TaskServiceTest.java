@@ -2,9 +2,11 @@ package com.christian.taskmanager.service.impl;
 
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
+import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.entity.*;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.repository.TaskRepository;
+import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.CurrentUserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,6 +36,9 @@ public class TaskServiceTest {
 
     @Mock
     private TaskRepository taskRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private CurrentUserService currentUserService;
@@ -419,6 +424,150 @@ public class TaskServiceTest {
                     .hasMessage("Task not found");
 
             verify(taskRepository).findByIdAndDeletedTrue(taskId);
+        }
+    }
+
+    @Nested
+    @DisplayName("getSummaryByUser")
+    class GetSummaryByUserTests {
+
+        @Test
+        @DisplayName("Should return summary tasks by user")
+        void shouldReturnSummaryTasksByUser() {
+            // Arrange
+            Long userId = 1L;
+            TaskSummaryDTO expectedDto = new TaskSummaryDTO(10, 1, 6, 3, 4, 2, 4, 5);
+
+            when(userRepository.existsById(userId)).thenReturn(true);
+            when(taskRepository.getSummaryByUser(userId)).thenReturn(expectedDto);
+
+            // Act
+            TaskSummaryDTO result = taskService.getSummaryByUser(userId);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(10, result.total());
+            assertEquals(1, result.todo());
+            assertEquals(6, result.inProgress());
+            assertEquals(3, result.done());
+            assertEquals(4, result.low());
+            assertEquals(2, result.medium());
+            assertEquals(4, result.high());
+            assertEquals(5, result.deleted());
+
+            verify(userRepository, times(1)).existsById(userId);
+            verify(taskRepository, times(1)).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should return empty summary when user has no tasks")
+        void shouldReturnEmptySummaryWhenUserHasNoTasks() {
+            // Arrange
+            Long userId = 1L;
+
+            when(userRepository.existsById(userId)).thenReturn(true);
+            when(taskRepository.getSummaryByUser(userId)).thenReturn(null);
+
+            // Act
+            TaskSummaryDTO result = taskService.getSummaryByUser(userId);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(0, result.total());
+            assertEquals(0, result.todo());
+            assertEquals(0, result.inProgress());
+            assertEquals(0, result.done());
+            assertEquals(0, result.low());
+            assertEquals(0, result.medium());
+            assertEquals(0, result.high());
+            assertEquals(0, result.deleted());
+
+            verify(userRepository, times(1)).existsById(userId);
+            verify(taskRepository, times(1)).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should throw NotFoundException when user not found")
+        void shouldThrowNotFoundExceptionWhenUserNotFound() {
+            // Arrange
+            Long userId = 999L;
+
+            when(userRepository.existsById(userId)).thenReturn(false);
+
+            // Act/Assert
+            assertThrows(NotFoundException.class, () -> taskService.getSummaryByUser(userId));
+            verify(userRepository, times(1)).existsById(userId);
+            verify(taskRepository, never()).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should return summary with only deleted tasks")
+        void shouldReturnSummaryWithOnlyDeletedTasks() {
+            // Arrange
+            Long userId = 1L;
+            TaskSummaryDTO expectedDto = new TaskSummaryDTO(0, 0, 0, 0, 0, 0, 0, 5);
+
+            when(userRepository.existsById(userId)).thenReturn(true);
+            when(taskRepository.getSummaryByUser(userId)).thenReturn(expectedDto);
+
+            // Act
+            TaskSummaryDTO result = taskService.getSummaryByUser(userId);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(0, result.total());
+            assertEquals(5, result.deleted());
+
+            verify(userRepository, times(1)).existsById(userId);
+            verify(taskRepository, times(1)).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should return summary with all tasks in TODO status")
+        void shouldReturnSummaryWithAllTasksInTodoStatus() {
+            // Arrange
+            Long userId = 1L;
+            TaskSummaryDTO expectedDto = new TaskSummaryDTO(8, 8, 0, 0, 2, 3, 3, 0);
+
+            when(userRepository.existsById(userId)).thenReturn(true);
+            when(taskRepository.getSummaryByUser(userId)).thenReturn(expectedDto);
+
+            // Act
+            TaskSummaryDTO result = taskService.getSummaryByUser(userId);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(8, result.total());
+            assertEquals(8, result.todo());
+            assertEquals(0, result.inProgress());
+            assertEquals(0, result.done());
+
+            verify(userRepository, times(1)).existsById(userId);
+            verify(taskRepository, times(1)).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should return summary with high priority tasks")
+        void shouldReturnSummaryWithHighPriorityTasks() {
+            // Arrange
+            Long userId = 1L;
+            TaskSummaryDTO expectedDto = new TaskSummaryDTO(7, 2, 3, 2, 0, 0, 7, 0);
+
+            when(userRepository.existsById(userId)).thenReturn(true);
+            when(taskRepository.getSummaryByUser(userId)).thenReturn(expectedDto);
+
+            // Act
+            TaskSummaryDTO result = taskService.getSummaryByUser(userId);
+
+            // Assert
+            assertNotNull(result);
+            assertEquals(7, result.total());
+            assertEquals(7, result.high());
+            assertEquals(0, result.low());
+            assertEquals(0, result.medium());
+
+            verify(userRepository, times(1)).existsById(userId);
+            verify(taskRepository, times(1)).getSummaryByUser(userId);
         }
     }
 }

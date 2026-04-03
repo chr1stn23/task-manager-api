@@ -2,6 +2,7 @@ package com.christian.taskmanager.service.impl;
 
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
+import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.Task;
 import com.christian.taskmanager.entity.TaskStatus;
@@ -9,6 +10,7 @@ import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.mapper.TaskMapper;
 import com.christian.taskmanager.repository.TaskRepository;
+import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.repository.specification.TaskSpecification;
 import com.christian.taskmanager.security.CurrentUserService;
 import com.christian.taskmanager.service.TaskService;
@@ -25,6 +27,7 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final CurrentUserService currentUserService;
+    private final UserRepository userRepository;
 
     @Transactional
     @Override
@@ -40,7 +43,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TaskResponseDTO> getTasks(Boolean deleted, String searchTerm, TaskStatus status, Priority priority, Long userId,
+    public Page<TaskResponseDTO> getTasks(Boolean deleted, String searchTerm, TaskStatus status, Priority priority,
+            Long userId,
             Pageable pageable) {
         Specification<Task> spec = Specification
                 .where(TaskSpecification.isDeleted(deleted))
@@ -107,5 +111,16 @@ public class TaskServiceImpl implements TaskService {
         task.setDeleted(false);
 
         taskRepository.save(task);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TaskSummaryDTO getSummaryByUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException("User not found");
+        }
+
+        TaskSummaryDTO summary = taskRepository.getSummaryByUser(userId);
+        return summary != null ? summary : new TaskSummaryDTO(0, 0, 0, 0, 0, 0, 0, 0);
     }
 }

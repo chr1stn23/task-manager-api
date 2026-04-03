@@ -4,6 +4,7 @@ import com.christian.taskmanager.dto.request.ResetPasswordByAdminDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
+import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Priority;
@@ -539,6 +540,105 @@ public class AdminControllerTest {
             // Assert
             Pageable pageable = pageableCaptor.getValue();
             assertEquals("dueDate: DESC", pageable.getSort().toString());
+        }
+    }
+
+    @Nested
+    @DisplayName("getUserTaskSummary")
+    class GetUserTaskSummaryTests {
+
+        @Test
+        @DisplayName("Should return task summary for user")
+        void shouldReturnTaskSummaryForUser() throws Exception {
+            // Arrange
+            Long userId = 1L;
+            TaskSummaryDTO summary = new TaskSummaryDTO(10, 2, 5, 3, 2, 3, 5, 1);
+
+            when(taskService.getSummaryByUser(userId)).thenReturn(summary);
+
+            // Act/Assert
+            mockMvc.perform(get("/api/admin/users/{userId}/tasks/summary", userId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.total").value(10))
+                    .andExpect(jsonPath("$.data.todo").value(2))
+                    .andExpect(jsonPath("$.data.inProgress").value(5))
+                    .andExpect(jsonPath("$.data.done").value(3))
+                    .andExpect(jsonPath("$.data.low").value(2))
+                    .andExpect(jsonPath("$.data.medium").value(3))
+                    .andExpect(jsonPath("$.data.high").value(5))
+                    .andExpect(jsonPath("$.data.deleted").value(1));
+
+            verify(taskService, times(1)).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should return empty summary when user has no tasks")
+        void shouldReturnEmptySummaryWhenUserHasNoTasks() throws Exception {
+            // Arrange
+            Long userId = 2L;
+            TaskSummaryDTO summary = new TaskSummaryDTO(0, 0, 0, 0, 0, 0, 0, 0);
+
+            when(taskService.getSummaryByUser(userId)).thenReturn(summary);
+
+            // Act/Assert
+            mockMvc.perform(get("/api/admin/users/{userId}/tasks/summary", userId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.total").value(0))
+                    .andExpect(jsonPath("$.data.deleted").value(0));
+
+            verify(taskService, times(1)).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should return 404 when user not found")
+        void shouldReturn404WhenUserNotFound() throws Exception {
+            // Arrange
+            Long userId = 99L;
+
+            when(taskService.getSummaryByUser(userId))
+                    .thenThrow(new NotFoundException("User not found"));
+
+            // Act/Assert
+            mockMvc.perform(get("/api/admin/users/{userId}/tasks/summary", userId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.error.code").value("NOT_FOUND"))
+                    .andExpect(jsonPath("$.error.message").value("User not found"));
+
+            verify(taskService, times(1)).getSummaryByUser(userId);
+        }
+
+        @Test
+        @DisplayName("Should return 400 when user ID is invalid")
+        void shouldReturn400WhenUserIdIsInvalid() throws Exception {
+            // Act/Assert
+            mockMvc.perform(get("/api/admin/users/abc/tasks/summary"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success").value(false))
+                    .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"));
+
+            verifyNoInteractions(taskService);
+        }
+
+        @Test
+        @DisplayName("Should return summary with only deleted tasks")
+        void shouldReturnSummaryWithOnlyDeletedTasks() throws Exception {
+            // Arrange
+            Long userId = 3L;
+            TaskSummaryDTO summary = new TaskSummaryDTO(0, 0, 0, 0, 0, 0, 0, 5);
+
+            when(taskService.getSummaryByUser(userId)).thenReturn(summary);
+
+            // Act/Assert
+            mockMvc.perform(get("/api/admin/users/{userId}/tasks/summary", userId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.total").value(0))
+                    .andExpect(jsonPath("$.data.deleted").value(5));
+
+            verify(taskService, times(1)).getSummaryByUser(userId);
         }
     }
 

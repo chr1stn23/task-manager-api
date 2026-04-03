@@ -158,6 +158,16 @@ public class AdminController {
         return ResponseUtils.success(taskService.getTasks(deleted, search, status, priority, userId, pageable));
     }
 
+    @Operation(summary = "Get user task summary")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Summary retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/users/{userId}/tasks/summary")
+    public ApiResponseWrapper<TaskSummaryDTO> getUserTaskSummary(@PathVariable Long userId) {
+        return ResponseUtils.success(taskService.getSummaryByUser(userId));
+    }
+
     // ===================================================
     //                       SESSIONS
     // ===================================================

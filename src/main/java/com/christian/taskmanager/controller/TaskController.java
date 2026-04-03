@@ -3,6 +3,7 @@ package com.christian.taskmanager.controller;
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
+import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.TaskStatus;
 import com.christian.taskmanager.security.CurrentUserService;
@@ -111,5 +112,16 @@ public class TaskController {
     public ApiResponseWrapper<String> restoreTask(@PathVariable Long id) {
         taskService.restoreTask(id);
         return ResponseUtils.success("Task restored successfully");
+    }
+
+    @Operation(summary = "Get current user task summary")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Summary retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/summary")
+    public ApiResponseWrapper<TaskSummaryDTO> getMyTaskSummary() {
+        Long currentUserId = currentUserService.getCurrentUserId();
+        return ResponseUtils.success(taskService.getSummaryByUser(currentUserId));
     }
 }
