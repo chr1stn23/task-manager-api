@@ -1,11 +1,18 @@
 package com.christian.taskmanager.exception;
 
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
+import com.christian.taskmanager.exception.admin.AdminBusinessException;
+import com.christian.taskmanager.exception.admin.AdminErrorCode;
+import com.christian.taskmanager.exception.user.UserBusinessException;
+import com.christian.taskmanager.exception.user.UserStateErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +20,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -21,6 +29,20 @@ import static org.mockito.Mockito.when;
 class GlobalExceptionHandlerTest {
 
     private GlobalExceptionHandler handler;
+
+    static Stream<AdminErrorCode> adminErrorCodes() {
+        return Stream.of(
+                AdminErrorCode.ADMIN_CANNOT_DISABLE_SELF,
+                AdminErrorCode.ADMIN_CANNOT_REMOVE_OWN_ADMIN_ROLE
+        );
+    }
+
+    static Stream<UserStateErrorCode> userStateErrorCodes() {
+        return Stream.of(
+                UserStateErrorCode.USER_ALREADY_ENABLED,
+                UserStateErrorCode.USER_ALREADY_DISABLED
+        );
+    }
 
     @BeforeEach
     void setUp() {
@@ -44,7 +66,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("Should return 403 when UnauthorizedException is thrown")
+    @DisplayName("Should return 401 when UnauthorizedException is thrown")
     void shouldHandleUnauthorizedException() {
         // Arrange
         UnauthorizedException ex = new UnauthorizedException("Not authorized");
@@ -53,22 +75,27 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleUnauthorized(ex);
 
         // Assert
-        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Not authorized", response.getBody().getError().getMessage());
-        assertEquals("ACCESS_DENIED", response.getBody().getError().getCode());
+        assertEquals("UNAUTHORIZED", response.getBody().getError().getCode());
     }
 
     @Test
     @DisplayName("Should return 403 when AccessDeniedException is thrown")
     void shouldHandleAccessDeniedException() {
+        // Arrange
+        AccessDeniedException ex = new AccessDeniedException("Access denied");
+
         // Act
-        ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleAccessDenied();
+        ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleAccessDenied(ex);
 
         // Assert
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("ACCESS_DENIED", response.getBody().getError().getCode());
+        assertEquals("You do not have permission to access this resource",
+                response.getBody().getError().getMessage());
     }
 
     @Test
@@ -117,7 +144,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("Should return 401 when UserDisabledException is thrown")
+    @DisplayName("Should return 403 when UserDisabledException is thrown")
     void shouldHandleUserDisabledException() {
         // Arrange
         UserDisabledException ex = new UserDisabledException("User disabled");
@@ -126,7 +153,7 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleUserDisabled(ex);
 
         // Assert
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("USER_DISABLED", response.getBody().getError().getCode());
     }
@@ -211,7 +238,7 @@ class GlobalExceptionHandlerTest {
     @DisplayName("Should return 500 when generic Exception is thrown")
     void shouldHandleGenericException() {
         // Arrange
-        Exception ex = new Exception("Unexpected error");
+        Exception ex = new Exception("Generic error");
 
         // Act
         ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleGeneric(ex);
@@ -309,6 +336,42 @@ class GlobalExceptionHandlerTest {
         assertNotNull(response.getBody());
         assertEquals("REFRESH_TOKEN_REVOKED", response.getBody().getError().getCode());
         assertTrue(response.getBody().getError().getMessage().contains("abc123"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("adminErrorCodes")
+    @DisplayName("Should handle AdminBusinessException properly for all error codes")
+    void shouldHandleAdminBusinessException(AdminErrorCode code) {
+        // Arrange
+        AdminBusinessException ex = new AdminBusinessException(code);
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleAdminBusiness(ex);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+
+        assertEquals(code.name(), response.getBody().getError().getCode());
+        assertNotNull(response.getBody().getError().getMessage());
+    }
+
+    @ParameterizedTest
+    @MethodSource("userStateErrorCodes")
+    @DisplayName("Should handle UserBusiness properly for all error codes")
+    void shouldHandleUserBusinessException(UserStateErrorCode code) {
+        // Arrange
+        UserBusinessException ex = new UserBusinessException(code);
+
+        // Act
+        ResponseEntity<ApiResponseWrapper<Void>> response = handler.handleUserBusiness(ex);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+
+        assertEquals(code.name(), response.getBody().getError().getCode());
+        assertNotNull(response.getBody().getError().getMessage());
     }
 
     enum TestEnum {ACTIVE, INACTIVE}

@@ -9,6 +9,8 @@ import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.*;
+import com.christian.taskmanager.exception.admin.AdminBusinessException;
+import com.christian.taskmanager.exception.user.UserBusinessException;
 import com.christian.taskmanager.integration.cloudinary.CloudinaryService;
 import com.christian.taskmanager.integration.cloudinary.dto.CloudinaryUploadResponse;
 import com.christian.taskmanager.repository.UserRepository;
@@ -387,7 +389,7 @@ public class UserServiceTest {
 
             // Act/Assert
             assertThatThrownBy(() -> userService.updateByAdmin(id, request))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(AdminBusinessException.class)
                     .hasMessage("Cannot disable yourself");
             verify(userRepository, never()).save(any(User.class));
         }
@@ -406,8 +408,8 @@ public class UserServiceTest {
             when(currentUserService.getCurrentUserId()).thenReturn(id);
 
             assertThatThrownBy(() -> userService.updateByAdmin(id, request))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Cannot remove admin role from yourself");
+                    .isInstanceOf(AdminBusinessException.class)
+                    .hasMessage("Cannot remove own admin role");
             verify(userRepository, never()).save(any(User.class));
         }
 
@@ -757,7 +759,7 @@ public class UserServiceTest {
 
             // Act/Assert
             assertThatThrownBy(() -> userService.disableUser(id))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(AdminBusinessException.class)
                     .hasMessage("Cannot disable yourself");
             verify(userRepository, never()).findById(any());
         }
@@ -796,8 +798,8 @@ public class UserServiceTest {
 
             // Act / Assert
             assertThatThrownBy(() -> userService.disableUser(targetId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("User is already disabled");
+                    .isInstanceOf(UserBusinessException.class)
+                    .hasMessage("User already disabled");
             verify(userRepository, never()).save(any());
         }
     }
@@ -835,8 +837,8 @@ public class UserServiceTest {
 
             // Act/Assert
             assertThatThrownBy(() -> userService.enableUser(userId))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("User is already enabled");
+                    .isInstanceOf(UserBusinessException.class)
+                    .hasMessage("User already enabled");
             verify(userRepository, never()).save(any());
         }
 

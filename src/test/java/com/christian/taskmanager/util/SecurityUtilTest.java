@@ -4,6 +4,7 @@ import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.UnauthorizedException;
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -100,27 +101,23 @@ public class SecurityUtilTest {
         }
 
         @Test
-        @DisplayName("Should throw UnauthorizedException in hasRole when not authenticated")
-        void hasRole_ShouldThrowException_WhenNotAuthenticated() {
+        @DisplayName("Should return false when not authenticated")
+        void hasRole_ShouldReturnFalse_WhenNotAuthenticated() {
             // Arrange
             when(authentication.isAuthenticated()).thenReturn(false);
 
             // Act/Assert
-            assertThatThrownBy(() -> SecurityUtils.hasRole("ROLE_ADMIN"))
-                    .isInstanceOf(UnauthorizedException.class)
-                    .hasMessage("User not authenticated");
+            assertThat(SecurityUtils.hasRole("ROLE_ADMIN")).isFalse();
         }
 
         @Test
-        @DisplayName("Should throw UnauthorizedException in hasRole when authentication is null")
-        void hasRole_ShouldThrowException_WhenAuthenticationIsNull() {
+        @DisplayName("Should return false when authentication is null")
+        void hasRole_ShouldReturnFalse_WhenAuthenticationIsNull() {
             // Arrange
             when(securityContext.getAuthentication()).thenReturn(null);
 
             // Act/Assert
-            assertThatThrownBy(() -> SecurityUtils.hasRole("ROLE_ADMIN"))
-                    .isInstanceOf(UnauthorizedException.class)
-                    .hasMessage("User not authenticated");
+            assertThat(SecurityUtils.hasRole("ROLE_ADMIN")).isFalse();
         }
     }
 
@@ -175,7 +172,24 @@ public class SecurityUtilTest {
 
             // Act/Assert
             assertThatThrownBy(() -> SecurityUtils.checkOwnershipOrAdmin(2L))
-                    .isInstanceOf(UnauthorizedException.class)
+                    .isInstanceOf(AccessDeniedException.class)
+                    .hasMessage("You do not have permission to access this resource");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user has no ID")
+        void shouldThrowException_WhenUserHasNoId() {
+            // Arrange
+            User currentUser = new User();
+
+            when(authentication.isAuthenticated()).thenReturn(true);
+            when(authentication.getPrincipal()).thenReturn(currentUser);
+            doReturn(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
+                    .when(authentication).getAuthorities();
+
+            // Act/Assert
+            assertThatThrownBy(() -> SecurityUtils.checkOwnershipOrAdmin(2L))
+                    .isInstanceOf(AccessDeniedException.class)
                     .hasMessage("You do not have permission to access this resource");
         }
 

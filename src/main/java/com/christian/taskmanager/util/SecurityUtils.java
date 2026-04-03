@@ -2,6 +2,7 @@ package com.christian.taskmanager.util;
 
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.UnauthorizedException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -13,25 +14,25 @@ public class SecurityUtils {
     }
 
     public static User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (auth == null || !auth.isAuthenticated()) {
             throw new UnauthorizedException("User not authenticated");
         }
 
-        return (User) authentication.getPrincipal();
+        return (User) auth.getPrincipal();
     }
 
     public static boolean hasRole(String role) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("User not authenticated");
+        if (auth == null || !auth.isAuthenticated()) {
+            return false;
         }
 
-        return authentication.getAuthorities()
+        return auth.getAuthorities()
                 .stream()
-                .anyMatch(auth -> Objects.equals(auth.getAuthority(), role));
+                .anyMatch(a -> Objects.equals(a.getAuthority(), role));
     }
 
     public static boolean isAdmin() {
@@ -41,11 +42,10 @@ public class SecurityUtils {
     public static void checkOwnershipOrAdmin(Long userId) {
         User currentUser = getCurrentUser();
 
-        boolean isOwner = currentUser.getId().equals(userId);
-        boolean isAdmin = hasRole("ROLE_ADMIN");
+        boolean isOwner = currentUser.getId() != null && currentUser.getId().equals(userId);
 
-        if (!isOwner && !isAdmin) {
-            throw new UnauthorizedException("You do not have permission to access this resource");
+        if (!isOwner && !isAdmin()) {
+            throw new AccessDeniedException("You do not have permission to access this resource");
         }
     }
 }

@@ -1,7 +1,10 @@
 package com.christian.taskmanager.exception;
 
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
+import com.christian.taskmanager.exception.admin.AdminBusinessException;
+import com.christian.taskmanager.exception.user.UserBusinessException;
 import com.christian.taskmanager.util.ResponseUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +17,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Arrays;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -27,12 +31,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleUnauthorized(UnauthorizedException ex) {
         return ResponseEntity
-                .status(HttpStatus.FORBIDDEN)
-                .body(ResponseUtils.error(ex.getMessage(), "ACCESS_DENIED"));
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ResponseUtils.error(ex.getMessage(), "UNAUTHORIZED"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponseWrapper<Void>> handleAccessDenied() {
+    public ResponseEntity<ApiResponseWrapper<Void>> handleAccessDenied(AccessDeniedException ex) {
+        log.error("Access denied", ex);
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ResponseUtils.error("You do not have permission to access this resource", "ACCESS_DENIED"));
@@ -62,7 +67,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UserDisabledException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleUserDisabled(UserDisabledException ex) {
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+                .status(HttpStatus.FORBIDDEN)
                 .body(ResponseUtils.error(ex.getMessage(), "USER_DISABLED"));
     }
 
@@ -118,10 +123,25 @@ public class GlobalExceptionHandler {
                 .body(ResponseUtils.error(ex.getMessage(), "MAX_UPLOAD_SIZE_EXCEEDED"));
     }
 
+    @ExceptionHandler(AdminBusinessException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleAdminBusiness(AdminBusinessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ResponseUtils.error(ex.getMessage(), ex.getCode().name()));
+    }
+
+    @ExceptionHandler(UserBusinessException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleUserBusiness(UserBusinessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ResponseUtils.error(ex.getMessage(), ex.getCode().name()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleGeneric(Exception ex) {
+        log.error("Internal error", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ResponseUtils.error(ex.getMessage(), "INTERNAL_ERROR"));
+                .body(ResponseUtils.error("Unexpected error occurred", "INTERNAL_ERROR"));
     }
 }

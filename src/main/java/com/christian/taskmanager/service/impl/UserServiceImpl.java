@@ -9,6 +9,10 @@ import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.*;
+import com.christian.taskmanager.exception.admin.AdminBusinessException;
+import com.christian.taskmanager.exception.admin.AdminErrorCode;
+import com.christian.taskmanager.exception.user.UserBusinessException;
+import com.christian.taskmanager.exception.user.UserStateErrorCode;
 import com.christian.taskmanager.integration.cloudinary.CloudinaryService;
 import com.christian.taskmanager.integration.cloudinary.dto.CloudinaryUploadResponse;
 import com.christian.taskmanager.mapper.UserMapper;
@@ -92,11 +96,11 @@ public class UserServiceImpl implements UserService {
 
         if (id.equals(currentId)) {
             if (request.enabled() != null && !request.enabled()) {
-                throw new IllegalStateException("Cannot disable yourself");
+                throw new AdminBusinessException(AdminErrorCode.ADMIN_CANNOT_DISABLE_SELF);
             }
 
             if (request.roles() != null && !request.roles().contains(Role.ROLE_ADMIN)) {
-                throw new IllegalStateException("Cannot remove admin role from yourself");
+                throw new AdminBusinessException(AdminErrorCode.ADMIN_CANNOT_REMOVE_OWN_ADMIN_ROLE);
             }
         }
 
@@ -147,14 +151,14 @@ public class UserServiceImpl implements UserService {
         boolean isAdmin = currentUserService.isAdmin();
 
         if (isAdmin && id.equals(currentId)) {
-            throw new IllegalStateException("Cannot disable yourself");
+            throw new AdminBusinessException(AdminErrorCode.ADMIN_CANNOT_DISABLE_SELF);
         }
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (!user.isEnabled()) {
-            throw new IllegalStateException("User is already disabled");
+            throw new UserBusinessException(UserStateErrorCode.USER_ALREADY_DISABLED);
         }
 
         user.setEnabled(false);
@@ -168,7 +172,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (user.isEnabled()) {
-            throw new IllegalStateException("User is already enabled");
+            throw new UserBusinessException(UserStateErrorCode.USER_ALREADY_ENABLED);
         }
 
         user.setEnabled(true);
