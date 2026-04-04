@@ -3,10 +3,7 @@ package com.christian.taskmanager.controller;
 import com.christian.taskmanager.dto.request.ResetPasswordByAdminDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
-import com.christian.taskmanager.dto.response.TaskResponseDTO;
-import com.christian.taskmanager.dto.response.TaskSummaryDTO;
-import com.christian.taskmanager.dto.response.UserListResponseDTO;
-import com.christian.taskmanager.dto.response.UserResponseDTO;
+import com.christian.taskmanager.dto.response.*;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.TaskStatus;
@@ -27,8 +24,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -156,14 +151,34 @@ public class AdminControllerTest {
         @Test
         @DisplayName("Should return paginated users with filters")
         void shouldReturnPaginatedUsers() throws Exception {
-            // Arrange
-            UserListResponseDTO user = new UserListResponseDTO(1L, "Admin", "Lastname", "nickname", "admin@test.com",
-                    null, true);
-            Page<UserListResponseDTO> page = new PageImpl<>(List.of(user));
-            when(userService.getUsers(eq("Admin"), isNull(), eq(true), any(Pageable.class)))
-                    .thenReturn(page);
 
-            // Act/Assert
+            UserListResponseDTO user =
+                    new UserListResponseDTO(
+                            1L,
+                            "Admin",
+                            "Lastname",
+                            "nickname",
+                            "admin@test.com",
+                            null,
+                            true
+                    );
+
+            PageResponse<UserListResponseDTO> response =
+                    PageResponse.<UserListResponseDTO>builder()
+                            .content(List.of(user))
+                            .page(0)
+                            .size(10)
+                            .totalElements(1)
+                            .totalPages(1)
+                            .first(true)
+                            .last(true)
+                            .hasNext(false)
+                            .hasPrevious(false)
+                            .build();
+
+            when(userService.getUsers(eq("Admin"), isNull(), eq(true), any(Pageable.class)))
+                    .thenReturn(response);
+
             mockMvc.perform(get("/api/admin/users")
                             .param("name", "Admin")
                             .param("enabled", "true")
@@ -172,6 +187,7 @@ public class AdminControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.content.length()").value(1))
                     .andExpect(jsonPath("$.data.content[0].email").value("admin@test.com"));
+
             verify(userService).getUsers(eq("Admin"), isNull(), eq(true), any(Pageable.class));
         }
 
@@ -496,11 +512,33 @@ public class AdminControllerTest {
         void shouldReturnTasksFilteredByStatusAndPriority() throws Exception {
             // Arrange
             TaskResponseDTO task = new TaskResponseDTO(
-                    1L, "Test Task", "Desc", TaskStatus.IN_PROGRESS, Priority.HIGH, null);
-            Page<TaskResponseDTO> page = new PageImpl<>(List.of(task));
+                    1L, "Test Task", "Desc",
+                    TaskStatus.IN_PROGRESS,
+                    Priority.HIGH,
+                    null
+            );
 
-            when(taskService.getTasks(eq(false), isNull(), eq(TaskStatus.IN_PROGRESS), eq(Priority.HIGH), any(), any()))
-                    .thenReturn(page);
+            PageResponse<TaskResponseDTO> response =
+                    PageResponse.<TaskResponseDTO>builder()
+                            .content(List.of(task))
+                            .page(0)
+                            .size(10)
+                            .totalElements(1)
+                            .totalPages(1)
+                            .first(true)
+                            .last(true)
+                            .hasNext(false)
+                            .hasPrevious(false)
+                            .build();
+
+            when(taskService.getTasks(
+                    eq(false),
+                    isNull(),
+                    eq(TaskStatus.IN_PROGRESS),
+                    eq(Priority.HIGH),
+                    any(),
+                    any()
+            )).thenReturn(response);
 
             // Act/Assert
             mockMvc.perform(get("/api/admin/tasks")
@@ -522,6 +560,7 @@ public class AdminControllerTest {
                     .andExpect(jsonPath("$.success").value(false))
                     .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
                     .andExpect(jsonPath("$.error.message").value(containsString("Allowed values")));
+
             verifyNoInteractions(taskService);
         }
 
@@ -529,15 +568,28 @@ public class AdminControllerTest {
         @DisplayName("Should use default pagination when no params provided")
         void shouldUseDefaultPaginationWhenNoParamsProvided() throws Exception {
             // Arrange
-            Page<TaskResponseDTO> emptyPage = new PageImpl<>(List.of());
+            PageResponse<TaskResponseDTO> emptyResponse =
+                    PageResponse.<TaskResponseDTO>builder()
+                            .content(List.of())
+                            .page(0)
+                            .size(10)
+                            .totalElements(0)
+                            .totalPages(0)
+                            .first(true)
+                            .last(true)
+                            .hasNext(false)
+                            .hasPrevious(false)
+                            .build();
+
             ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
             when(taskService.getTasks(any(), any(), any(), any(), any(), pageableCaptor.capture()))
-                    .thenReturn(emptyPage);
+                    .thenReturn(emptyResponse);
 
-            // Act
-            mockMvc.perform(get("/api/admin/tasks")).andExpect(status().isOk());
+            // Act/Assert
+            mockMvc.perform(get("/api/admin/tasks"))
+                    .andExpect(status().isOk());
 
-            // Assert
             Pageable pageable = pageableCaptor.getValue();
             assertEquals("dueDate: DESC", pageable.getSort().toString());
         }

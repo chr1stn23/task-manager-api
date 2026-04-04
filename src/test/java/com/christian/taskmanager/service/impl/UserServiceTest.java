@@ -4,6 +4,7 @@ import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
+import com.christian.taskmanager.dto.response.PageResponse;
 import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
@@ -185,7 +186,7 @@ public class UserServiceTest {
             when(userRepository.findAll(ArgumentMatchers.<Specification<User>>any(), eq(pageable))).thenReturn(userPage);
 
             // Act
-            Page<UserListResponseDTO> response = userService.getUsers(null, null, null, pageable);
+            PageResponse<UserListResponseDTO> response = userService.getUsers(null, null, null, pageable);
 
             // Assert
             assertNotNull(response);
@@ -209,7 +210,7 @@ public class UserServiceTest {
             when(userRepository.findAll(ArgumentMatchers.<Specification<User>>any(), eq(pageable))).thenReturn(userPage);
 
             // Act
-            Page<UserListResponseDTO> response = userService.getUsers(filterName, null, null, pageable);
+            PageResponse<UserListResponseDTO> response = userService.getUsers(filterName, null, null, pageable);
 
             // Assert
             assertNotNull(response);
@@ -228,7 +229,7 @@ public class UserServiceTest {
             when(userRepository.findAll(ArgumentMatchers.<Specification<User>>any(), eq(pageable))).thenReturn(emptyPage);
 
             // Act
-            Page<UserListResponseDTO> response = userService.getUsers("NonExistentName", null, null, pageable);
+            PageResponse<UserListResponseDTO> response = userService.getUsers("NonExistentName", null, null, pageable);
 
             // Assert
             assertNotNull(response);

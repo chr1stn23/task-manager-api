@@ -1,6 +1,7 @@
 package com.christian.taskmanager.service.impl;
 
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
+import com.christian.taskmanager.dto.response.PageResponse;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.entity.Priority;
@@ -8,6 +9,7 @@ import com.christian.taskmanager.entity.Task;
 import com.christian.taskmanager.entity.TaskStatus;
 import com.christian.taskmanager.entity.User;
 import com.christian.taskmanager.exception.NotFoundException;
+import com.christian.taskmanager.mapper.PageMapper;
 import com.christian.taskmanager.mapper.TaskMapper;
 import com.christian.taskmanager.repository.TaskRepository;
 import com.christian.taskmanager.repository.UserRepository;
@@ -43,7 +45,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TaskResponseDTO> getTasks(Boolean deleted, String searchTerm, TaskStatus status, Priority priority,
+    public PageResponse<TaskResponseDTO> getTasks(Boolean deleted, String searchTerm, TaskStatus status,
+            Priority priority,
             Long userId,
             Pageable pageable) {
         Specification<Task> spec = Specification
@@ -53,9 +56,11 @@ public class TaskServiceImpl implements TaskService {
                 .and(TaskSpecification.hasPriority(priority))
                 .and(TaskSpecification.belongsToUserId(userId));
 
-        return taskRepository
-                .findAll(spec, pageable)
-                .map(TaskMapper::toDTO);
+        Page<TaskResponseDTO> dtoPage =
+                taskRepository.findAll(spec, pageable)
+                        .map(TaskMapper::toDTO);
+
+        return PageMapper.from(dtoPage);
     }
 
     @Transactional(readOnly = true)

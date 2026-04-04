@@ -1,6 +1,7 @@
 package com.christian.taskmanager.controller;
 
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
+import com.christian.taskmanager.dto.response.PageResponse;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.entity.Priority;
@@ -20,7 +21,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -126,19 +129,33 @@ public class TaskControllerTest {
         @Test
         @DisplayName("Should return tasks page successfully")
         void shouldReturnTasksPage() throws Exception {
-            // Assert
-            Pageable expectedPageable = PageRequest.of(0, 10, Sort.Direction.DESC, "dueDate");
 
-            Page<TaskResponseDTO> page = new PageImpl<>(List.of(
-                    new TaskResponseDTO(1L, "Task 1", null, TaskStatus.TODO, Priority.MEDIUM, null)
-            ));
+            Pageable expectedPageable =
+                    PageRequest.of(0, 10, Sort.Direction.DESC, "dueDate");
+
+            TaskResponseDTO taskDto =
+                    new TaskResponseDTO(1L, "Task 1", null, TaskStatus.TODO, Priority.MEDIUM, null);
+
+            PageResponse<TaskResponseDTO> response =
+                    PageResponse.<TaskResponseDTO>builder()
+                            .content(List.of(taskDto))
+                            .page(0)
+                            .size(10)
+                            .totalElements(1)
+                            .totalPages(1)
+                            .first(true)
+                            .last(true)
+                            .hasNext(false)
+                            .hasPrevious(false)
+                            .nextPage(null)
+                            .previousPage(null)
+                            .build();
 
             when(currentUserService.getCurrentUserId()).thenReturn(1L);
 
             when(taskService.getTasks(null, null, null, null, 1L, expectedPageable))
-                    .thenReturn(page);
+                    .thenReturn(response);
 
-            // Act/Assert
             mockMvc.perform(get("/api/tasks"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
@@ -150,35 +167,63 @@ public class TaskControllerTest {
         @Test
         @DisplayName("Should return tasks filtered by status and priority")
         void shouldReturnTasksFiltered() throws Exception {
-            Pageable expectedPageable = PageRequest.of(0, 10, Sort.Direction.DESC, "dueDate");
-            Page<TaskResponseDTO> page = new PageImpl<>(List.of());
+
+            Pageable expectedPageable =
+                    PageRequest.of(0, 10, Sort.Direction.DESC, "dueDate");
+
+            PageResponse<TaskResponseDTO> response =
+                    PageResponse.<TaskResponseDTO>builder()
+                            .content(List.of())
+                            .page(0)
+                            .size(10)
+                            .totalElements(0)
+                            .totalPages(0)
+                            .first(true)
+                            .last(true)
+                            .hasNext(false)
+                            .hasPrevious(false)
+                            .build();
 
             when(currentUserService.getCurrentUserId()).thenReturn(1L);
-            when(taskService.getTasks(true, null, TaskStatus.TODO, Priority.HIGH, 1L, expectedPageable))
-                    .thenReturn(page);
 
-            // Act/Assert
+            when(taskService.getTasks(true, null, TaskStatus.TODO, Priority.HIGH, 1L, expectedPageable))
+                    .thenReturn(response);
+
             mockMvc.perform(get("/api/tasks")
                             .param("deleted", "true")
                             .param("status", "TODO")
                             .param("priority", "HIGH"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.content").isArray())
+                    .andExpect(jsonPath("$.data.content.length()").value(0));
+
             verify(taskService).getTasks(true, null, TaskStatus.TODO, Priority.HIGH, 1L, expectedPageable);
         }
 
         @Test
         @DisplayName("Should apply pagination parameters")
         void shouldApplyPagination() throws Exception {
-            // Arrange
-            when(currentUserService.getCurrentUserId()).thenReturn(1L);
-            when(taskService.getTasks(any(), any(), any(), any(), any(), any()))
-                    .thenReturn(Page.empty());
 
-            // Act/Assert
+            when(currentUserService.getCurrentUserId()).thenReturn(1L);
+
+            when(taskService.getTasks(any(), any(), any(), any(), any(), any()))
+                    .thenReturn(PageResponse.<TaskResponseDTO>builder()
+                            .content(List.of())
+                            .page(1)
+                            .size(5)
+                            .totalElements(0)
+                            .totalPages(0)
+                            .first(true)
+                            .last(true)
+                            .hasNext(false)
+                            .hasPrevious(false)
+                            .build());
+
             mockMvc.perform(get("/api/tasks")
                             .param("page", "1")
                             .param("size", "5"))
                     .andExpect(status().isOk());
+
             verify(taskService).getTasks(
                     any(), any(), any(), any(), eq(1L),
                     eq(PageRequest.of(1, 5, Sort.by("dueDate").descending()))

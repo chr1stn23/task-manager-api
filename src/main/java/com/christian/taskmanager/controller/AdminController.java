@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -58,7 +57,7 @@ public class AdminController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/users")
-    public ApiResponseWrapper<Page<UserListResponseDTO>> getUsers(
+    public ApiResponseWrapper<PageResponse<UserListResponseDTO>> getUsers(
             @Parameter(description = "Filter by firstName, lastName, nickName")
             @RequestParam(required = false) String name,
             @Parameter(description = "Filter by email")
@@ -142,7 +141,7 @@ public class AdminController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/tasks")
-    public ApiResponseWrapper<Page<TaskResponseDTO>> getTasks(
+    public ApiResponseWrapper<PageResponse<TaskResponseDTO>> getTasks(
             @Parameter(description = "Filter by deleted status")
             @RequestParam(required = false) Boolean deleted,
             @Parameter(description = "Filter by task title or description")

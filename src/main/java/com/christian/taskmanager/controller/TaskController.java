@@ -2,6 +2,7 @@ package com.christian.taskmanager.controller;
 
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
 import com.christian.taskmanager.dto.response.ApiResponseWrapper;
+import com.christian.taskmanager.dto.response.PageResponse;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.entity.Priority;
@@ -16,7 +17,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -48,7 +48,7 @@ public class TaskController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
-    public ApiResponseWrapper<Page<TaskResponseDTO>> getTasks(
+    public ApiResponseWrapper<PageResponse<TaskResponseDTO>> getTasks(
             @Parameter(description = "Filter by deleted status")
             @RequestParam(required = false) Boolean deleted,
             @Parameter(description = "Filter by task title or description")

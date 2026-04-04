@@ -1,6 +1,7 @@
 package com.christian.taskmanager.service.impl;
 
 import com.christian.taskmanager.dto.request.TaskRequestDTO;
+import com.christian.taskmanager.dto.response.PageResponse;
 import com.christian.taskmanager.dto.response.TaskResponseDTO;
 import com.christian.taskmanager.dto.response.TaskSummaryDTO;
 import com.christian.taskmanager.entity.*;
@@ -118,7 +119,8 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(false, null, status, priority, null, pageable);
+            PageResponse<TaskResponseDTO> response = taskService.getTasks(false, null, status, priority, null,
+                    pageable);
 
             // Assert
             assertNotNull(response);
@@ -145,7 +147,7 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(true, null, null, null, null, pageable);
+            PageResponse<TaskResponseDTO> response = taskService.getTasks(true, null, null, null, null, pageable);
 
             // Assert
             assertNotNull(response);
@@ -166,7 +168,7 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(null, null, null, null, null, pageable);
+            PageResponse<TaskResponseDTO> response = taskService.getTasks(null, null, null, null, null, pageable);
 
             // Assert
             assertNotNull(response);
@@ -188,7 +190,7 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(false, null, null, null, 1L, pageable);
+            PageResponse<TaskResponseDTO> response = taskService.getTasks(false, null, null, null, 1L, pageable);
 
             // Assert
             assertNotNull(response);
@@ -210,7 +212,7 @@ public class TaskServiceTest {
             when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any(), eq(pageable))).thenReturn(taskPage);
 
             // Act
-            Page<TaskResponseDTO> response = taskService.getTasks(true, null, null, null, null, pageable);
+            PageResponse<TaskResponseDTO> response = taskService.getTasks(true, null, null, null, null, pageable);
 
             // Assert
             assertNotNull(response);

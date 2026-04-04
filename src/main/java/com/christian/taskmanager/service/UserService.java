@@ -4,9 +4,9 @@ import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
+import com.christian.taskmanager.dto.response.PageResponse;
 import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,7 +14,7 @@ public interface UserService {
 
     UserResponseDTO create(UserCreateDTO request);
 
-    Page<UserListResponseDTO> getUsers(String searchTerm, String email, Boolean enabled, Pageable pageable);
+    PageResponse<UserListResponseDTO> getUsers(String searchTerm, String email, Boolean enabled, Pageable pageable);
 
     UserResponseDTO getUserById(Long id);
 

@@ -4,6 +4,7 @@ import com.christian.taskmanager.dto.request.PasswordChangeRequestDTO;
 import com.christian.taskmanager.dto.request.UserCreateDTO;
 import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.request.UserUpdateBySelfDTO;
+import com.christian.taskmanager.dto.response.PageResponse;
 import com.christian.taskmanager.dto.response.UserListResponseDTO;
 import com.christian.taskmanager.dto.response.UserResponseDTO;
 import com.christian.taskmanager.entity.Role;
@@ -15,6 +16,7 @@ import com.christian.taskmanager.exception.user.UserBusinessException;
 import com.christian.taskmanager.exception.user.UserStateErrorCode;
 import com.christian.taskmanager.integration.cloudinary.CloudinaryService;
 import com.christian.taskmanager.integration.cloudinary.dto.CloudinaryUploadResponse;
+import com.christian.taskmanager.mapper.PageMapper;
 import com.christian.taskmanager.mapper.UserMapper;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.repository.specification.UserSpecification;
@@ -64,15 +66,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserListResponseDTO> getUsers(String searchTerm, String email, Boolean enabled, Pageable pageable) {
+    public PageResponse<UserListResponseDTO> getUsers(String searchTerm, String email, Boolean enabled,
+            Pageable pageable) {
         Specification<User> spec = Specification
                 .where(UserSpecification.isEnabled(enabled))
                 .and(UserSpecification.isNameLike(searchTerm))
                 .and(UserSpecification.isEmailLike(email));
 
-        return userRepository
+        Page<UserListResponseDTO> dtoPage = userRepository
                 .findAll(spec, pageable)
                 .map(UserMapper::toListDTO);
+
+        return PageMapper.from(dtoPage);
     }
 
     @Override
