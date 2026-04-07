@@ -64,7 +64,7 @@ public class AdminController {
             @RequestParam(required = false) String email,
             @Parameter(description = "Filter by enabled status")
             @RequestParam(required = false) Boolean enabled,
-            @PageableDefault(sort = "name", direction = Sort.Direction.ASC) Pageable pageable
+            @PageableDefault(sort = "firstName", direction = Sort.Direction.ASC) Pageable pageable
     ) {
         return ResponseUtils.success(userService.getUsers(name, email, enabled, pageable));
     }
