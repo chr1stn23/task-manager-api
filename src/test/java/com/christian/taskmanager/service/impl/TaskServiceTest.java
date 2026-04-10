@@ -466,9 +466,11 @@ public class TaskServiceTest {
         void shouldReturnEmptySummaryWhenUserHasNoTasks() {
             // Arrange
             Long userId = 1L;
+            TaskSummaryDTO expectedDto = new TaskSummaryDTO(0, 0, 0, 0, 0, 0, 0, 0);
+
 
             when(userRepository.existsById(userId)).thenReturn(true);
-            when(taskRepository.getSummaryByUser(userId)).thenReturn(null);
+            when(taskRepository.getSummaryByUser(userId)).thenReturn(expectedDto);
 
             // Act
             TaskSummaryDTO result = taskService.getSummaryByUser(userId);

@@ -18,6 +18,7 @@ import com.christian.taskmanager.integration.cloudinary.CloudinaryService;
 import com.christian.taskmanager.integration.cloudinary.dto.CloudinaryUploadResponse;
 import com.christian.taskmanager.mapper.PageMapper;
 import com.christian.taskmanager.mapper.UserMapper;
+import com.christian.taskmanager.repository.RefreshTokenRepository;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.repository.specification.UserSpecification;
 import com.christian.taskmanager.security.CurrentUserService;
@@ -43,6 +44,7 @@ import java.util.Objects;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final CurrentUserService currentUserService;
     private final CloudinaryService cloudinaryService;
@@ -168,6 +170,8 @@ public class UserServiceImpl implements UserService {
 
         user.setEnabled(false);
         userRepository.save(user);
+
+        refreshTokenRepository.revokeAllSessionsByUserId(id);
     }
 
     @Override
@@ -195,6 +199,8 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+
+        refreshTokenRepository.revokeAllSessionsByUserId(user.getId());
     }
 
     @Override
@@ -206,6 +212,8 @@ public class UserServiceImpl implements UserService {
         if (updatedRows == 0) {
             throw new NotFoundException("User not found");
         }
+
+        refreshTokenRepository.revokeAllSessionsByUserId(id);
     }
 
     @Override

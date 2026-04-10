@@ -125,7 +125,6 @@ public class TaskServiceImpl implements TaskService {
             throw new NotFoundException("User not found");
         }
 
-        TaskSummaryDTO summary = taskRepository.getSummaryByUser(userId);
-        return summary != null ? summary : new TaskSummaryDTO(0, 0, 0, 0, 0, 0, 0, 0);
+        return taskRepository.getSummaryByUser(userId);
     }
 }

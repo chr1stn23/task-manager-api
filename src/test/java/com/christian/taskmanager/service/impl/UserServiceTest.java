@@ -14,6 +14,7 @@ import com.christian.taskmanager.exception.admin.AdminBusinessException;
 import com.christian.taskmanager.exception.user.UserBusinessException;
 import com.christian.taskmanager.integration.cloudinary.CloudinaryService;
 import com.christian.taskmanager.integration.cloudinary.dto.CloudinaryUploadResponse;
+import com.christian.taskmanager.repository.RefreshTokenRepository;
 import com.christian.taskmanager.repository.UserRepository;
 import com.christian.taskmanager.security.CurrentUserService;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +49,9 @@ public class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
     private CurrentUserService currentUserService;
@@ -718,6 +722,7 @@ public class UserServiceTest {
             when(currentUserService.isAdmin()).thenReturn(true);
             doNothing().when(currentUserService).checkOwnershipOrAdmin(targetId);
             when(userRepository.findById(targetId)).thenReturn(Optional.of(user));
+            doNothing().when(refreshTokenRepository).revokeAllSessionsByUserId(targetId);
 
             // Act
             userService.disableUser(targetId);
