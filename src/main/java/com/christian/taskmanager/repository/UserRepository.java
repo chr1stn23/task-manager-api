@@ -33,4 +33,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
             @Param("userId") Long userId,
             @Param("imageId") String imageId,
             @Param("imageUrl") String imageUrl);
+
+    long countByEnabledTrue();
 }

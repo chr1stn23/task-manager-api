@@ -9,6 +9,7 @@ import com.christian.taskmanager.entity.Role;
 import com.christian.taskmanager.entity.TaskStatus;
 import com.christian.taskmanager.exception.NotFoundException;
 import com.christian.taskmanager.security.JwtAuthenticationFilter;
+import com.christian.taskmanager.service.AdminDashboardService;
 import com.christian.taskmanager.service.SessionService;
 import com.christian.taskmanager.service.TaskService;
 import com.christian.taskmanager.service.UserService;
@@ -65,6 +66,9 @@ public class AdminControllerTest {
 
     @MockitoBean
     private SessionService sessionService;
+
+    @MockitoBean
+    private AdminDashboardService adminDashboardService;
 
     @Nested
     @DisplayName("createUser")
@@ -764,7 +768,7 @@ public class AdminControllerTest {
 
     @Nested
     @DisplayName("revokeSession")
-    class revokeSessionTests {
+    class RevokeSessionTests {
         @Test
         @DisplayName("Should revoke specific session from a user successfully")
         void shouldRevokeSpecificSessionSuccessfully() throws Exception {
@@ -794,6 +798,50 @@ public class AdminControllerTest {
             mockMvc.perform(delete("/api/admin/users/{userId}/sessions/{sessionId}", userId, sessionId))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.error.code").value("NOT_FOUND"));
+        }
+    }
+
+    @Nested
+    @DisplayName("getDashboardStats")
+    class DashboardTests {
+        @Test
+        @DisplayName("Should return dashboard stats successfully")
+        void shouldReturnDashboardStatsSuccessfully() throws Exception {
+            // Arrange
+            AdminDashboardDTO response = new AdminDashboardDTO(
+                    10L,
+                    50L,
+                    5L,
+                    List.of(
+                            new StatusCountDTO(TaskStatus.TODO, 20),
+                            new StatusCountDTO(TaskStatus.IN_PROGRESS, 15),
+                            new StatusCountDTO(TaskStatus.DONE, 15)
+                    ),
+                    List.of(
+                            new PriorityCountDTO(Priority.LOW, 10),
+                            new PriorityCountDTO(Priority.MEDIUM, 20),
+                            new PriorityCountDTO(Priority.HIGH, 20)
+                    ),
+                    List.of(
+                            new UserTaskCountDTO("user1", 25),
+                            new UserTaskCountDTO("user2", 15)
+                    )
+            );
+
+            when(adminDashboardService.getGlobalStats()).thenReturn(response);
+
+            // Act/Assert
+            mockMvc.perform(get("/api/admin/dashboard/stats"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.activeUsers").value(10))
+                    .andExpect(jsonPath("$.data.totalTasks").value(50))
+                    .andExpect(jsonPath("$.data.liveSessions").value(5))
+                    .andExpect(jsonPath("$.data.tasksByStatus.length()").value(3))
+                    .andExpect(jsonPath("$.data.tasksByPriority.length()").value(3))
+                    .andExpect(jsonPath("$.data.topUsers.length()").value(2));
+
+            verify(adminDashboardService, times(1)).getGlobalStats();
         }
     }
 }

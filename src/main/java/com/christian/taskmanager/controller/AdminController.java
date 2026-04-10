@@ -6,6 +6,7 @@ import com.christian.taskmanager.dto.request.UserUpdateByAdminDTO;
 import com.christian.taskmanager.dto.response.*;
 import com.christian.taskmanager.entity.Priority;
 import com.christian.taskmanager.entity.TaskStatus;
+import com.christian.taskmanager.service.AdminDashboardService;
 import com.christian.taskmanager.service.SessionService;
 import com.christian.taskmanager.service.TaskService;
 import com.christian.taskmanager.service.UserService;
@@ -35,6 +36,7 @@ public class AdminController {
     private final UserService userService;
     private final TaskService taskService;
     private final SessionService sessionService;
+    private final AdminDashboardService dashboardService;
 
     // ===================================================
     //                       USERS
@@ -205,5 +207,15 @@ public class AdminController {
     public ApiResponseWrapper<String> revokeSession(@PathVariable Long userId, @PathVariable Long sessionId) {
         sessionService.adminRevokeSession(userId, sessionId);
         return ResponseUtils.success("Session revoked successfully");
+    }
+
+    // ===================================================
+    //                       DASHBOARD
+    // ===================================================
+
+    @Operation(summary = "Get global dashboard statistics")
+    @GetMapping("/dashboard/stats")
+    public ApiResponseWrapper<AdminDashboardDTO> getDashboardStats() {
+        return ResponseUtils.success(dashboardService.getGlobalStats());
     }
 }

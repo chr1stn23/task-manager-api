@@ -1,12 +1,17 @@
 package com.christian.taskmanager.repository;
 
+import com.christian.taskmanager.dto.response.PriorityCountDTO;
+import com.christian.taskmanager.dto.response.StatusCountDTO;
 import com.christian.taskmanager.dto.response.TaskSummaryDTO;
+import com.christian.taskmanager.dto.response.UserTaskCountDTO;
 import com.christian.taskmanager.entity.Task;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
@@ -34,4 +39,26 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
                 WHERE t.user.id = :userId AND t.deleted = FALSE
             """)
     TaskSummaryDTO getSummaryByUser(@Param("userId") Long userId);
+
+    long countByDeletedFalse();
+
+    @Query("""
+            SELECT new com.christian.taskmanager.dto.response.StatusCountDTO(t.status, COUNT(t))
+                        FROM Task t WHERE t.deleted = false GROUP BY t.status
+            """)
+    List<StatusCountDTO> countTasksByStatus();
+
+    @Query("""
+            SELECT new com.christian.taskmanager.dto.response.PriorityCountDTO(t.priority, COUNT(t))
+                        FROM Task t WHERE t.deleted = false GROUP BY t.priority
+            """)
+    List<PriorityCountDTO> countTasksByPriority();
+
+    @Query("""
+                SELECT new com.christian.taskmanager.dto.response.UserTaskCountDTO(u.nickName, COUNT(t))
+                    FROM Task t JOIN t.user u WHERE t.deleted = false
+                        GROUP BY u.nickName ORDER BY COUNT(t) DESC
+            """)
+    List<UserTaskCountDTO> findTopUsersByTasksCount(Pageable pageable);
+
 }
